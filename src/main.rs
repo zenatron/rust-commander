@@ -114,6 +114,11 @@ struct ConnectPayload {
     socket_path: String,
 }
 
+#[derive(Deserialize)]
+struct TextCommandPayload {
+    text_command: String,
+}
+
 #[post("/connect")]
 async fn connect_route(
     payload: web::Json<ConnectPayload>,
@@ -315,6 +320,34 @@ async fn send_command(
     }
 }
 
+#[post("/send-text-command")]
+async fn send_text_command_route(
+    payload: web::Json<TextCommandPayload>,
+    app_state: web::Data<AppState>,
+) -> impl Responder {
+    let mut tcp_stream_guard = app_state.tcp_stream.lock().unwrap();
+
+    if let Some(stream) = tcp_stream_guard.as_mut() {
+        let command_to_send = payload.text_command.clone();
+        let mut command_bytes = payload.text_command.as_bytes().to_vec();
+        command_bytes.push(b'\r'); // Append carriage return
+
+        println!("Sending raw text command: {}", command_to_send);
+
+        if let Err(e) = stream.write_all(&command_bytes).await {
+            println!("TCP write error (text command): {}", e);
+            return HttpResponse::InternalServerError().body(format!("TCP write error (text command): {}", e));
+        }
+        // Also broadcast this raw command as sent?
+        // For now, the response to the HTTP request is enough.
+        // The client-side will add it to its local message log.
+
+        HttpResponse::Ok().body(format!("Text command sent: {}", command_to_send))
+    } else {
+        HttpResponse::InternalServerError().body("Not connected to any TCP socket.")
+    }
+}
+
 #[get("/ws")]
 async fn ws_route(
     req: HttpRequest,
@@ -345,6 +378,7 @@ async fn main() -> std::io::Result<()> {
             .service(connect_route)
             .service(disconnect_route)
             .service(send_command)
+            .service(send_text_command_route)
             .service(ws_route)
             .service(fs::Files::new("/", "./static").index_file("index.html"))
     })

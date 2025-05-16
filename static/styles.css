@@ -1,0 +1,170 @@
+body { font-family: sans-serif; }
+.tab-container { display: flex; margin-bottom: 10px; }
+.tab { padding: 10px 15px; cursor: pointer; border: 1px solid #ccc; border-bottom: none; margin-right: 5px; background-color: #f1f1f1; }
+.tab.active { background-color: #ddd; }
+
+#mainInteractiveArea {
+    display: flex;
+    margin-top: 10px;
+}
+
+#tabContentContainer { /* Left panel */
+    flex: 1; 
+    max-height: 700px; 
+    overflow-y: auto; 
+    border-right: 1px solid #ccc; 
+    padding-right: 10px; 
+}
+
+.tab-content { display: none; padding: 10px; }
+.tab-content.active { display: block; }
+.command-list { list-style-type: none; padding: 0; margin: 0; }
+.command-list li { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+.command-list li:hover { background-color: #f9f9f9; }
+
+#formAndResponseArea { /* Right panel */
+    flex: 1.5; 
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+#jsonDisplayAreasContainer {
+    display: flex;
+    flex-direction: column; /* Stack vertically */
+    margin-bottom: 10px; /* Reduced margin */
+}
+#jsonDisplayAreasContainer > div {
+    flex: 1;
+    margin-bottom: 5px; /* Space between raw and filled JSON boxes */
+}
+#jsonDisplayAreasContainer > div:first-child {
+    padding-right: 0; /* No padding needed when stacked */
+}
+#jsonDisplayAreasContainer > div:last-child {
+    padding-left: 0; /* No padding needed when stacked */
+}
+
+pre#rawJsonDisplay, pre#filledJsonDisplay {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 30px; /* Significantly reduced height for single line */
+    height: auto; /* Allow height to adjust to content, for wrapping */
+    font-family: monospace;
+    font-size: 0.9em;
+    border: 1px solid #ccc;
+    padding: 5px;
+    margin: 0;
+    overflow-x: auto; /* Allow horizontal scroll for long single lines */
+    overflow-y: hidden; /* Hide vertical scrollbar if content fits */
+    white-space: pre; /* Prevent wrapping of the single JSON line */
+    word-break: normal; /* Changed from break-all */
+    background-color: white;
+}
+
+/* Highlight styles */
+.highlight-yellow { background-color: #ffed4a; }
+.highlight-green { background-color: #d2f8d2; /* PaleGreen variant */ }
+
+#variableInputsContainer {
+    margin-top: 5px; 
+    margin-bottom:10px; /* Reduced margin */
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    background-color: #fdfdfd;
+    max-height: 50px; /* Reduced max height */
+    overflow-y: auto; 
+    display: flex; 
+    flex-wrap: wrap; /* Allow wrapping if they don't fit */
+    gap: 10px; /* Space between variable groups */
+}
+.variable-input-group {
+    margin-bottom: 0; /* Removed bottom margin as gap handles spacing */
+    display: flex;
+    align-items: center;
+}
+.variable-input-group label {
+    display: inline-block;
+    margin-right: 5px; /* Reduced margin */
+    font-weight: normal; 
+    font-size: 0.85em; /* Slightly smaller font */
+    white-space: nowrap; /* Prevent label text from wrapping */
+}
+.variable-input-group input[type="text"] {
+    width: 100px; /* Fixed smaller width, adjust as needed */
+    padding: 4px; /* Reduced padding */
+    border: 1px solid #ccc;
+    font-size: 0.85em; /* Slightly smaller font */
+}
+
+#socketPathContainer { 
+    display: none; /* Will be moved to header */
+}
+
+#buttonsContainer {
+    display: none; /* Will be moved to header */
+}
+
+#header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 20px;
+}
+
+#connectionStatus {
+    font-weight: bold;
+    padding: 4px 6px;
+    border-radius: 4px;
+    color: white;
+}
+.status-connected {
+    background-color: green;
+}
+.status-disconnected {
+    background-color: red;
+}
+
+#header-controls input[type="text"] {
+    width: 200px; /* Adjust as needed */
+    padding: 4px;
+    border: 1px solid #ccc;
+    font-size: 0.85em;
+}
+
+#header-controls button {
+    padding: 4px 8px; /* Smaller padding for header buttons */
+    font-size: 0.85em;
+}
+
+#messagesContainer { margin-top: 15px; }
+pre#messagesDisplay { 
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 450px; /* Increased height */
+    height: 600px; /* Increased height */
+    font-family: monospace;
+    font-size: 0.9em;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 5px;
+    margin: 0;
+    overflow: auto;
+    white-space: pre-wrap; /* Important for allowing spans to wrap if needed, but primarily for line breaks between spans */
+}
+.message-line { /* Common style for all message lines */
+    display: block; /* Ensures each span takes a full line */
+    padding: 2px 4px; /* Add a little padding within each message block */
+    margin-bottom: 2px; /* Tiny space between message blocks */
+    white-space: pre; /* Preserve internal spacing of the JSON string */
+    overflow-x: auto; /* Add horizontal scroll for individual long messages */
+    border-radius: 3px;
+}
+.message-sent {
+    background-color: #a0e0fd;
+    color: #000000;
+}
+.message-received {
+    background-color: #a4fca3;
+    color: #000000;
+} 
