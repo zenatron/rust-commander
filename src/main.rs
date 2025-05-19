@@ -1,5 +1,4 @@
 use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-use actix_files as fs;
 use serde::Deserialize;
 use serde_json::{Value as JsonValue, Deserializer};
 use tokio::net::TcpStream;
@@ -10,6 +9,8 @@ use actix_web_actors::ws;
 use actix::{Actor, StreamHandler, Message, Handler, ActorContext, AsyncContext};
 use tokio::task::JoinHandle;
 use tokio::sync::broadcast;
+use rust_embed::RustEmbed;
+use mime_guess;
 
 // Message type for WebSocket actor to send text to its client
 #[derive(Message)]
@@ -366,6 +367,27 @@ async fn ws_route(
     Ok(resp)
 }
 
+#[derive(RustEmbed)]
+#[folder = "static/"]
+struct Asset;
+
+async fn embedded_file_handler(req: HttpRequest) -> impl Responder {
+    let path = req.path().trim_start_matches('/');
+    let file = if path.is_empty() { "index.html" } else { path };
+
+    match Asset::get(file) {
+        Some(content) => {
+            let body = actix_web::body::BoxBody::new(content.data.into_owned());
+            let mime = mime_guess::from_path(file).first_or_octet_stream();
+            println!("Serving file: {} with MIME type: {}", file, mime);
+            HttpResponse::Ok()
+                .content_type(mime.as_ref())
+                .body(body)
+        }
+        None => HttpResponse::NotFound().body("404 Not Found"),
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("Starting server on 0.0.0.0:8080");
@@ -380,7 +402,7 @@ async fn main() -> std::io::Result<()> {
             .service(send_command)
             .service(send_text_command_route)
             .service(ws_route)
-            .service(fs::Files::new("/", "./static").index_file("index.html"))
+            .default_service(web::route().to(embedded_file_handler))
     })
     .bind("0.0.0.0:8080")?
     .run()

@@ -1,0 +1,27 @@
+[tasks.build-linux]
+description = "Build for Linux"
+command = "cargo"
+args = ["build", "--target", "x86_64-unknown-linux-gnu"]
+
+[tasks.build-linux-release]
+description = "Build for Linux with release profile"
+command = "cargo"
+args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release"]
+
+[tasks.build-windows]
+description = "Build for Windows"
+command = "cargo"
+args = ["build", "--target", "x86_64-pc-windows-msvc"]
+
+[tasks.build-windows-release]
+description = "Build for Windows with release profile"
+command = "cargo"
+args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
+
+[tasks.build-all]
+description = "Build for Linux and Windows"
+dependencies = ["build-linux", "build-windows"]
+
+[tasks.build-all-release]
+description = "Build for Linux and Windows with release profile"
+dependencies = ["build-linux-release", "build-windows-release"]

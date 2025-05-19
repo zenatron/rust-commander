@@ -1,5 +1,5 @@
 [package]
-name = "rust_websockets"
+name = "rust-commander"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,3 +13,5 @@ tokio = { version = "1", features = ["full"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] } # For stream utilities
 actix = "0.13" # Added actix
 actix-web-actors = "4.2" # Added actix-web-actors
+rust-embed = "8"
+mime_guess = "2.0.5"
