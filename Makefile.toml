@@ -49,21 +49,10 @@ command = "cargo"
 args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
 
 [tasks.rename-release-windows]
-description = "Rename Windows release binary with version (PowerShell fix)"
-script_runner = "powershell"
+description = "Rename Windows release binary with version (PowerShell single-line)"
+script_runner = ["powershell", "-Command"]
 script = [
-  '''
-  $metadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
-  $version = $metadata.packages[0].version
-  $src = "target\\x86_64-pc-windows-msvc\\release\\rust-commander.exe"
-  $dest = "target\\x86_64-pc-windows-msvc\\release\\rust-commander-win-$version.exe"
-  if (Test-Path $src) {
-    Rename-Item -Path $src -NewName $dest -Force
-    Write-Host "Renamed to: $dest"
-  } else {
-    Write-Host "File not found: $src"
-  }
-  '''
+  " $v = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages[0].version; $src = 'target\\x86_64-pc-windows-msvc\\release\\rust-commander.exe'; $dest = \"target\\x86_64-pc-windows-msvc\\release\\rust-commander-win-$v.exe\"; if (Test-Path $src) { Rename-Item -Path $src -NewName $dest -Force; Write-Host \"Renamed to: $dest\" } else { Write-Host \"File not found: $src\" }"
 ]
 dependencies = ["build-release-windows"]
 
