@@ -499,3 +499,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
   }
 });
+
+// Fetch and display project version in the header
+window.addEventListener('DOMContentLoaded', () => {
+  fetch('/api/version')
+    .then(res => res.text())
+    .then(version => {
+      const versionElem = document.getElementById('projectVersion');
+      if (versionElem) {
+        versionElem.textContent = `Version: ${version}`;
+      }
+    });
+});

@@ -3,25 +3,65 @@ description = "Build for Linux"
 command = "cargo"
 args = ["build", "--target", "x86_64-unknown-linux-gnu"]
 
-[tasks.build-linux-release]
+[tasks.rename-linux]
+description = "Rename Linux binary with version"
+script = [
+    '''
+    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+    mv target/x86_64-unknown-linux-gnu/debug/rust-commander target/x86_64-unknown-linux-gnu/debug/rust-commander-linux-$version || true
+    '''
+]
+dependencies = ["build-linux"]
+
+[tasks.build-release-linux]
 description = "Build for Linux with release profile"
 command = "cargo"
 args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release"]
+
+[tasks.rename-release-linux]
+description = "Rename Linux release binary with version"
+script = [
+    '''
+    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+    mv target/x86_64-unknown-linux-gnu/release/rust-commander target/x86_64-unknown-linux-gnu/release/rust-commander-linux-$version || true
+    '''
+]
+dependencies = ["build-release-linux"]
 
 [tasks.build-windows]
 description = "Build for Windows"
 command = "cargo"
 args = ["build", "--target", "x86_64-pc-windows-msvc"]
 
-[tasks.build-windows-release]
+[tasks.rename-windows]
+description = "Rename Windows binary with version"
+script = [
+    '''
+    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+    mv target/x86_64-pc-windows-msvc/debug/rust-commander.exe target/x86_64-pc-windows-msvc/debug/rust-commander-win-$version.exe || true
+    '''
+]
+dependencies = ["windows-build"]
+
+[tasks.build-release-windows]
 description = "Build for Windows with release profile"
 command = "cargo"
 args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
 
+[tasks.rename-release-windows]
+description = "Rename Windows release binary with version"
+script = [
+    '''
+    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+    mv target/x86_64-pc-windows-msvc/release/rust-commander.exe target/x86_64-pc-windows-msvc/release/rust-commander-win-$version.exe || true
+    '''
+]
+dependencies = ["build-release-windows"]
+
 [tasks.build-all]
 description = "Build for Linux and Windows"
-dependencies = ["build-linux", "build-windows"]
+dependencies = ["rename-linux", "rename-windows"]
 
-[tasks.build-all-release]
+[tasks.build-release-all]
 description = "Build for Linux and Windows with release profile"
-dependencies = ["build-linux-release", "build-windows-release"]
+dependencies = ["rename-release-linux", "rename-release-windows"]

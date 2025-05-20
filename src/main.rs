@@ -367,6 +367,11 @@ async fn ws_route(
     Ok(resp)
 }
 
+#[get("/api/version")]
+async fn version_route() -> impl Responder {
+    env!("CARGO_PKG_VERSION")
+}
+
 #[derive(RustEmbed)]
 #[folder = "static/"]
 struct Asset;
@@ -402,6 +407,7 @@ async fn main() -> std::io::Result<()> {
             .service(send_command)
             .service(send_text_command_route)
             .service(ws_route)
+            .service(version_route)
             .default_service(web::route().to(embedded_file_handler))
     })
     .bind("0.0.0.0:8080")?
