@@ -55,6 +55,11 @@ script = [
 ]
 dependencies = ["build-release-windows"]
 
+[tasks.build-windows-gnu]
+description = "Build for Windows with GNU toolchain"
+command = "cargo"
+args = ["build", "--target", "x86_64-pc-windows-gnu"]
+
 [tasks.build-all]
 description = "Build for Linux and Windows"
 dependencies = ["rename-linux", "rename-windows"]
