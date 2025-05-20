@@ -11,6 +11,8 @@ use tokio::task::JoinHandle;
 use tokio::sync::broadcast;
 use rust_embed::RustEmbed;
 use mime_guess;
+use local_ip_address::local_ip;
+use colored::*;
 
 // Message type for WebSocket actor to send text to its client
 #[derive(Message)]
@@ -395,9 +397,12 @@ async fn embedded_file_handler(req: HttpRequest) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    println!("Starting server on 0.0.0.0:8080");
-
     let app_state = web::Data::new(AppState::new());
+
+    let server_port: u16 = 8080;
+    let server_address: &str = "0.0.0.0";
+
+    print_setup_message(server_address, server_port);
 
     HttpServer::new(move || {
         App::new()
@@ -410,7 +415,38 @@ async fn main() -> std::io::Result<()> {
             .service(version_route)
             .default_service(web::route().to(embedded_file_handler))
     })
-    .bind("0.0.0.0:8080")?
+    .bind(format!("{}:{}", server_address, server_port))?
     .run()
     .await
+}
+
+fn print_setup_message(server_address: &str, server_port: u16) {
+    println!("{}", "Commander starting...".bright_blue());
+    println!(
+        "{}",
+        format!(
+            "Commander started on {}:{}.",
+            server_address,
+            server_port
+        ).green()
+    );
+    println!(
+        "To access Commander locally, visit {}{}{} (Ctrl+click to open)",
+        format!("\x1B]8;;http://localhost:{}\x1B\\", server_port).blue(),
+        format!("http://localhost:{}", server_port).bright_cyan().underline(),
+        "\x1B]8;;\x1B\\".blue()
+    );
+
+    if let Ok(my_local_ip) = local_ip() {
+        println!(
+            "To access Commander on the network, visit {}{}{} (Ctrl+click to open)",
+            format!("\x1B]8;;http://{}:{}\x1B\\", my_local_ip, server_port).blue(),
+            format!("http://{}:{}", my_local_ip, server_port).bright_cyan().underline(),
+            "\x1B]8;;\x1B\\".blue()
+        );
+    } else {
+        println!("{}", "Could not determine local IP address for network access link.".red());
+    }
+    println!("{}", "Press Ctrl+C or close the terminal window to stop the Commander.".yellow());
+    println!("{}", "------------------------------------------------------".dimmed());
 }
