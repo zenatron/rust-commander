@@ -50,10 +50,16 @@ args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
 
 [tasks.rename-release-windows]
 description = "Rename Windows release binary with version"
+script_runner = "powershell"
 script = [
     '''
-    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-    mv target/x86_64-pc-windows-msvc/release/rust-commander.exe target/x86_64-pc-windows-msvc/release/rust-commander-win-$version.exe || true
+    $metadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
+    $version = $metadata.packages[0].version
+    $src = "target\\x86_64-pc-windows-msvc\\release\\rust-commander.exe"
+    $dest = "target\\x86_64-pc-windows-msvc\\release\\rust-commander-win-$version.exe"
+    if (Test-Path $src) {
+        Rename-Item -Path $src -NewName $dest -Force
+    }
     '''
 ]
 dependencies = ["build-release-windows"]
