@@ -31,7 +31,9 @@
             Disconnect
           </button>
         </div>
-        <div id="response" style="border: 1px solid cornflowerblue; background-color: #e6f3ff; padding: 5px; margin-top: 5px; text-align: right; min-width: 250px; font-size: 0.9em; min-height: 1.2em; box-sizing: border-box;"></div>
+        <div
+        id="response"
+        ></div>
       </div>
     </div>
 
@@ -74,6 +76,7 @@
             <label for="messagesDisplay" style="font-weight: bold; margin-bottom: 0;">Messages:</label>
             <span class="message-sent-legend" style="font-size: 0.85em;"> (sent)</span>
             <span class="message-received-legend" style="font-size: 0.85em;"> (received)</span>
+            <button type="button" id="sortMessagesButton" title="Sort messages (newest first)" style="padding: 2px 5px; font-size: 0.8em;">Sort Newest First</button>
           </div>
           <pre id="messagesDisplay"></pre>
           <!-- Replaced textarea with pre -->

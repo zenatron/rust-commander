@@ -9,13 +9,20 @@ body {
     overflow-x: auto;
     white-space: nowrap;
 }
-.tab { padding: 10px 15px; cursor: pointer; border: 1px solid #ccc; border-bottom: none; margin-right: 5px; background-color: #e9e9ff; }
-.tab.active { background-color: #b2b2ff; }
+.tab { 
+    padding: 10px 15px; 
+    cursor: pointer; 
+    border: 1px solid #ccc; 
+    border-bottom: none; 
+    margin-right: 5px; 
+    background-color: #d5e2ff;
+}
+.tab.active { background-color: #89afff; }
 
 /* General Button Styling */
 button, input[type="button"], input[type="submit"] {
     padding: 8px 15px;
-    background-color: #a0c0ff;
+    background-color: #d5e2ff;
     color: rgb(0, 0, 0);
     border: 1px solid #000000;
     border-radius: 4px;
@@ -27,12 +34,12 @@ button, input[type="button"], input[type="submit"] {
 }
 
 button:hover, input[type="button"]:hover, input[type="submit"]:hover {
-    background-color: #6799ff;
+    background-color: #93b7ff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 button:active, input[type="button"]:active, input[type="submit"]:active {
-    background-color: #d0d0d0;
+    background-color: #e4e4e4;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -101,6 +108,19 @@ input[type="text"]:focus {
 }
 #jsonDisplayAreasContainer > div:last-child {
     padding-left: 0;
+}
+
+#response {
+    background-color: rgb(255, 182, 133);
+    border: 1px solid black;
+    border-radius: 4px;
+    padding: 5px;
+    margin-top: 5px;
+    text-align: center;
+    min-width: 250px;
+    font-size: 0.9em;
+    min-height: 1.2em;
+    box-sizing: border-box;
 }
 
 pre#rawJsonDisplay, pre#filledJsonDisplay {
@@ -245,4 +265,13 @@ pre#messagesDisplay {
 .message-received {
     background-color: #a4fca3;
     color: #000000;
+}
+.message-system {
+    background-color: #f0f0f0;
+    color: #555555;
+    font-style: italic;
+}
+
+#sortMessagesButton {
+    margin-left: auto; /* Pushes the button to the right in a flex container */
 }

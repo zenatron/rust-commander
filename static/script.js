@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tabContainer = document.getElementById("tabContainer");
   const tabContentContainer = document.getElementById("tabContentContainer");
   const messagesDisplayElement = document.getElementById("messagesDisplay");
+  const sortMessagesButton = document.getElementById("sortMessagesButton"); // Added sort button
 
   // New header controls
   const socketPathInputHeader = document.getElementById("socket_path_header");
@@ -32,6 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentFilledCommand = null;
   let persistentSocket = null;
   let activeVariablePaths = [];
+  let isSortedNewestFirst = false; // Added for live sort state
 
   // Function to update connection status display
   function updateConnectionStatus(isConnected) {
@@ -283,16 +285,83 @@ document.addEventListener("DOMContentLoaded", async () => {
       messageSpan.classList.add("message-sent");
     } else if (type === "received") {
       messageSpan.classList.add("message-received");
+    } else if (type === "system") { // Added for system messages like TCP close
+      messageSpan.classList.add("message-system");
     }
     messageSpan.textContent = messageText;
+    messageSpan.dataset.timestamp = Date.now(); // Add timestamp for sorting
 
-    messagesDisplayElement.appendChild(messageSpan);
-    messagesDisplayElement.scrollTop = messagesDisplayElement.scrollHeight; // Auto-scroll
+    if (isSortedNewestFirst) {
+      messagesDisplayElement.prepend(messageSpan); // Add to top if sorted newest first
+      messagesDisplayElement.scrollTop = 0; // Scroll to top
+    } else {
+      messagesDisplayElement.appendChild(messageSpan); // Default: append to bottom
+      messagesDisplayElement.scrollTop = messagesDisplayElement.scrollHeight; // Auto-scroll to bottom
+    }
+  }
+
+  // Sort functionality
+  if (sortMessagesButton) {
+    sortMessagesButton.addEventListener("click", () => {
+      isSortedNewestFirst = !isSortedNewestFirst; // Toggle sort state
+
+      const messages = Array.from(messagesDisplayElement.children);
+      if (isSortedNewestFirst) {
+        messages.sort((a, b) => {
+          // Sort by timestamp, newest first
+          return parseInt(b.dataset.timestamp) - parseInt(a.dataset.timestamp);
+        });
+        messagesDisplayElement.innerHTML = "";
+        messages.forEach(msg => messagesDisplayElement.appendChild(msg));
+        messagesDisplayElement.scrollTop = 0; // Scroll to top after sorting
+        sortMessagesButton.textContent = "Sort Oldest First";
+        responseDiv.textContent = "Messages sorted (newest first). New messages will appear at the top.";
+      } else {
+        messages.sort((a, b) => {
+          // Sort by timestamp, oldest first
+          return parseInt(a.dataset.timestamp) - parseInt(b.dataset.timestamp);
+        });
+        messagesDisplayElement.innerHTML = "";
+        messages.forEach(msg => messagesDisplayElement.appendChild(msg));
+        messagesDisplayElement.scrollTop = messagesDisplayElement.scrollHeight; // Scroll to bottom
+        sortMessagesButton.textContent = "Sort Newest First";
+        responseDiv.textContent = "Messages sorted (oldest first). New messages will appear at the bottom.";
+      }
+
+      setTimeout(() => {
+        if (responseDiv.textContent.startsWith("Messages sorted")) {
+          responseDiv.textContent = "";
+        }
+      }, 3000); // Increased timeout for longer message
+    });
   }
 
   sendButtonHeader.addEventListener("click", async () => {
     if (!currentFilledCommand) {
       responseDiv.textContent = "No command selected or filled.";
+      return;
+    }
+
+    // Check for empty variable inputs
+    const variableInputs = variableInputsContainer.querySelectorAll("input[type='text']");
+    let allVariablesFilled = true;
+    variableInputs.forEach(input => {
+      if (input.value.trim() === "") {
+        allVariablesFilled = false;
+        input.style.borderColor = "red"; // Highlight empty field
+      } else {
+        input.style.borderColor = "#ccc"; // Reset border color if filled to default
+      }
+    });
+
+    if (!allVariablesFilled) {
+      responseDiv.textContent = "Error: Please fill in all variable fields.";
+      // Clear the error message after a few seconds
+      setTimeout(() => {
+        if (responseDiv.textContent === "Error: Please fill in all variable fields.") {
+          responseDiv.textContent = "";
+        }
+      }, 3000);
       return;
     }
 
@@ -492,7 +561,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         event.data === "TCP_CONNECTION_CLOSED_OR_STREAM_ENDED"
       ) {
         messageContent = "--- TCP Connection Closed by Server ---";
-        messageType = "system"; // Or some other class for neutral styling
+        messageType = "system"; // Use system type
         responseDiv.textContent =
           "TCP Connection was closed by the server. WebSocket also closing.";
         if (
@@ -505,7 +574,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         messageContent = `--- TCP Read Error: ${event.data.substring(
           "TCP_READ_ERROR:".length
         )} ---`;
-        messageType = "system";
+        messageType = "system"; // Use system type
         responseDiv.textContent = "TCP Read Error. WebSocket also closing.";
         if (
           persistentSocket &&
