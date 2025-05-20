@@ -5,10 +5,14 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-top: 0;">
-      <div style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 0;">
-        <h2 style="margin-bottom: 2px; margin-top: 0;">Commander</h2>
-        <p id="projectVersion" style="font-size: 0.75em; color: #888; margin: 0 0 10px 0;"> </p>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0; margin-bottom: 10px;">
+      <div style="display: flex; align-items: flex-start; flex-direction: row;">
+        <div style="margin-right: 10px;">
+          <h2 style="margin-bottom: 0px; margin-top: 0;">Commander</h2>
+          <p id="projectVersion" style="font-size: 0.75em; color: #888; margin: 0; line-height: 1;">v0.1.0</p>
+        </div>
+        <input type="file" id="commandFileUpload" accept=".json" style="display: none;" />
+        <button type="button" id="uploadCommandFileButton" title="Upload custom command palette (JSON)" style="margin-top: 5px;">Load Palette</button>
       </div>
       <div id="header-controls">
         <span id="connectionStatus">Disconnected</span>
@@ -17,7 +21,7 @@
           id="socket_path_header"
           placeholder="/dev/tty... or ip:port"
         />
-        <button type="button" id="connectButton_header">Connect</button>
+        <button type="button" id="connectButton_header" title="Connect to a Device">Connect</button>
         <button
           type="button"
           id="disconnectButton_header"
@@ -46,7 +50,7 @@
           <div>
             <label for="filledJsonDisplay">Filled JSON (to Send):</label>
             <pre id="filledJsonDisplay"></pre>
-            <button type="button" id="sendButton">Send</button>
+            <button type="button" id="sendButton" title="Send command to connected device">Send</button>
           </div>
         </div>
 
@@ -54,24 +58,22 @@
           <!-- Dynamic input fields will go here -->
         </div>
 
-        <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
+        <!-- <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
           <label for="rawTextInput" style="font-weight: bold;">Raw Text Command:</label>
           <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
             <input type="text" id="rawTextInput" placeholder="Enter raw text command" style="flex-grow: 1; padding: 5px; border: 1px solid #ccc;">
-            <button type="button" id="sendRawTextButton" style="padding: 5px 10px;">Send Text</button>
+            <button type="button" id="sendRawTextButton" title="Send command to connected device">Send Text</button>
           </div>
-        </div>
+        </div> -->
 
         <div id="response"></div>
 
         <div id="messagesContainer">
-          <label for="messagesDisplay" style="font-weight: bold"
-            >Messages:</label
-          >
-          <span class="message-sent" style="font-size: 0.85em"> (sent)</span>
-          <span class="message-received" style="font-size: 0.85em">
-            (received)</span
-          >
+          <div style="display: flex; align-items: center; gap: 5px;">
+            <label for="messagesDisplay" style="font-weight: bold; margin-bottom: 0;">Messages:</label>
+            <span class="message-sent-legend" style="font-size: 0.85em;"> (sent)</span>
+            <span class="message-received-legend" style="font-size: 0.85em;"> (received)</span>
+          </div>
           <pre id="messagesDisplay"></pre>
           <!-- Replaced textarea with pre -->
         </div>

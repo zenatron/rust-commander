@@ -1,0 +1,10 @@
+{
+  "General Commands": {
+    "Status Check": {"action": "status"},
+    "Reset Device": {"action": "reset", "confirm": true}
+  },
+  "Advanced Settings": {
+    "Set Parameter X": {"action": "set_param", "name": "X", "value": "%10"},
+    "Get Log": {"action": "get_log", "level": "debug"}
+  }
+}

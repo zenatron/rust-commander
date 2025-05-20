@@ -18,6 +18,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const sendButtonHeader = document.getElementById("sendButton");
   const connectionStatusElement = document.getElementById("connectionStatus"); // New element
 
+  // File Upload Elements
+  const commandFileUploadInput = document.getElementById("commandFileUpload");
+  const uploadCommandFileButton = document.getElementById("uploadCommandFileButton");
+
   // Elements for raw text command
   const rawTextInputElement = document.getElementById("rawTextInput");
   const sendRawTextButtonElement = document.getElementById("sendRawTextButton");
@@ -43,14 +47,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   updateConnectionStatus(false); // Initial state
 
-  try {
-    const response = await fetch("commands.json");
-    commandsData = await response.json();
-  } catch (error) {
-    console.error("Error fetching commands.json:", error);
-    responseDiv.textContent = "Error loading commands.";
-    return;
+  // Function to load and process commands
+  async function loadCommands(source) {
+    try {
+      let data;
+      if (typeof source === 'string') { // URL for initial load
+        const response = await fetch(source);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        data = await response.json();
+      } else { // File object for user uploads
+        data = JSON.parse(await source.text()); // Parse file content as JSON
+      }
+      commandsData = data;
+      initializeTabsAndCommands(); // Re-initialize UI with new commands
+      responseDiv.textContent = "Commands loaded successfully.";
+    } catch (error) {
+      console.error("Error loading commands:", error);
+      responseDiv.textContent = "Error loading commands: " + error.message;
+      commandsData = {}; // Clear commands data on error
+      initializeTabsAndCommands(); // Clear UI or show error state
+    }
   }
+
+  // Initial load from commands.json
+  loadCommands("commands.json");
 
   function escapeHtml(unsafe) {
     return unsafe
@@ -165,76 +187,91 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (!hasPlaceholders) {
       variableInputsContainer.innerHTML =
-        '<p style="font-style: italic; color: #777; margin: 0; padding: 5px 0;">No variables to fill for this command.</p>';
+        '<p class="no-variables-message">No variables to fill for this command.</p>';
     }
   };
 
-  const topLevelKeys = Object.keys(commandsData);
-  topLevelKeys.forEach((key) => {
-    const nestedCommands = commandsData[key];
-    if (Object.keys(nestedCommands).length === 0) {
+  // Function to clear and rebuild tabs and command lists
+  function initializeTabsAndCommands() {
+    tabContainer.innerHTML = "";
+    tabContentContainer.innerHTML = "";
+    firstTabInitialized = false;
+    rawJsonDisplayElement.textContent = "";
+    filledJsonDisplayElement.textContent = "";
+    variableInputsContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
+    currentCommandTemplate = null;
+    currentFilledCommand = null;
+
+    if (Object.keys(commandsData).length === 0) {
+      tabContainer.textContent = "No commands loaded or error in loading.";
       return;
     }
 
-    const tabButton = document.createElement("div");
-    tabButton.classList.add("tab");
-    tabButton.textContent = key;
-    tabButton.dataset.tabKey = key;
-    tabContainer.appendChild(tabButton);
+    const topLevelKeys = Object.keys(commandsData);
+    topLevelKeys.forEach((key, index) => {
+      const nestedCommands = commandsData[key];
+      if (Object.keys(nestedCommands).length === 0) return;
 
-    const tabContent = document.createElement("div");
-    tabContent.classList.add("tab-content");
-    tabContent.id = `tab-${key.replace(/\s+/g, "-")}`;
-    tabContentContainer.appendChild(tabContent);
+      const tabButton = document.createElement("div");
+      tabButton.classList.add("tab");
+      tabButton.textContent = key;
+      tabButton.dataset.tabKey = key;
+      tabContainer.appendChild(tabButton);
 
-    const commandListUL = document.createElement("ul");
-    commandListUL.classList.add("command-list");
+      const tabContent = document.createElement("div");
+      tabContent.classList.add("tab-content");
+      tabContent.id = `tab-${key.replace(/\s+/g, "-")}`;
+      tabContentContainer.appendChild(tabContent);
 
-    for (const commandName in nestedCommands) {
-      const listItem = document.createElement("li");
-      listItem.textContent = commandName;
-      listItem.dataset.commandJsonString = JSON.stringify(
-        nestedCommands[commandName]
-      );
+      const commandListUL = document.createElement("ul");
+      commandListUL.classList.add("command-list");
 
-      listItem.addEventListener("click", (e) => {
-        const cmdJsonString = e.target.dataset.commandJsonString;
-        currentCommandTemplate = JSON.parse(cmdJsonString);
-        currentFilledCommand = JSON.parse(cmdJsonString);
-
-        generateVariableInputsUI(currentCommandTemplate);
-
-        const rawJsonForDisplay = JSON.stringify(currentCommandTemplate);
-        rawJsonDisplayElement.innerHTML = generateHighlightedHtml(
-          rawJsonForDisplay,
-          { type: "raw" }
+      for (const commandName in nestedCommands) {
+        const listItem = document.createElement("li");
+        listItem.textContent = commandName;
+        listItem.dataset.commandJsonString = JSON.stringify(
+          nestedCommands[commandName]
         );
 
-        updateFilledJsonTextarea();
+        listItem.addEventListener("click", (e) => {
+          const cmdJsonString = e.target.dataset.commandJsonString;
+          currentCommandTemplate = JSON.parse(cmdJsonString);
+          currentFilledCommand = JSON.parse(cmdJsonString);
+
+          generateVariableInputsUI(currentCommandTemplate);
+
+          const rawJsonForDisplay = JSON.stringify(currentCommandTemplate);
+          rawJsonDisplayElement.innerHTML = generateHighlightedHtml(
+            rawJsonForDisplay,
+            { type: "raw" }
+          );
+
+          updateFilledJsonTextarea();
+        });
+        commandListUL.appendChild(listItem);
+      }
+      tabContent.appendChild(commandListUL);
+
+      if (!firstTabInitialized && index === 0) {
+        tabButton.classList.add("active");
+        tabContent.classList.add("active");
+        firstTabInitialized = true;
+      }
+
+      tabButton.addEventListener("click", () => {
+        document
+          .querySelectorAll(".tab")
+          .forEach((tb) => tb.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((tc) => tc.classList.remove("active"));
+        tabButton.classList.add("active");
+        document
+          .getElementById(`tab-${key.replace(/\s+/g, "-")}`)
+          .classList.add("active");
       });
-      commandListUL.appendChild(listItem);
-    }
-    tabContent.appendChild(commandListUL);
-
-    if (!firstTabInitialized) {
-      tabButton.classList.add("active");
-      tabContent.classList.add("active");
-      firstTabInitialized = true;
-    }
-
-    tabButton.addEventListener("click", () => {
-      document
-        .querySelectorAll(".tab")
-        .forEach((tb) => tb.classList.remove("active"));
-      document
-        .querySelectorAll(".tab-content")
-        .forEach((tc) => tc.classList.remove("active"));
-      tabButton.classList.add("active");
-      document
-        .getElementById(`tab-${key.replace(/\s+/g, "-")}`)
-        .classList.add("active");
     });
-  });
+  }
 
   // Helper function to append messages to the new messages display area
   function appendMessageToDisplay(messageText, type) {
@@ -399,6 +436,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Event listener for the upload button
+  if (uploadCommandFileButton && commandFileUploadInput) {
+    uploadCommandFileButton.addEventListener("click", () => {
+      commandFileUploadInput.click(); // Trigger the hidden file input
+    });
+
+    commandFileUploadInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        if (file.type === "application/json") {
+          await loadCommands(file); // Load commands from the selected file
+        } else {
+          responseDiv.textContent = "Please upload a valid .json file.";
+          console.warn("Invalid file type selected for command palette.");
+        }
+      }
+      // Reset the file input to allow uploading the same file again if needed
+      commandFileUploadInput.value = null;
+    });
+  }
+
   function establishWebSocket(socketPathForContext) {
     if (
       persistentSocket &&
@@ -494,7 +552,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     persistentSocket.onerror = (error) => {
       console.error("WebSocket Error:", error);
-      // responseDiv.textContent = 'WebSocket error. See console.'; // Optionally update responseDiv
       updateConnectionStatus(false); // Assume disconnected on error
     };
   }
