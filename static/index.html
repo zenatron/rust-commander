@@ -14,21 +14,24 @@
         <input type="file" id="commandFileUpload" accept=".json" style="display: none;" />
         <button type="button" id="uploadCommandFileButton" title="Upload custom command palette (JSON)" style="margin-top: 5px;">Load Palette</button>
       </div>
-      <div id="header-controls">
-        <span id="connectionStatus">Disconnected</span>
-        <input
-          type="text"
-          id="socket_path_header"
-          placeholder="/dev/tty... or ip:port"
-        />
-        <button type="button" id="connectButton_header" title="Connect to a Device">Connect</button>
-        <button
-          type="button"
-          id="disconnectButton_header"
-          style="display: none"
-        >
-          Disconnect
-        </button>
+      <div style="display: flex; flex-direction: column; align-items: flex-end;">
+        <div id="header-controls">
+          <span id="connectionStatus">Disconnected</span>
+          <input
+            type="text"
+            id="socket_path_header"
+            placeholder="192.168.X.X:XXXX"
+          />
+          <button type="button" id="connectButton_header" title="Connect to a Device">Connect</button>
+          <button
+            type="button"
+            id="disconnectButton_header"
+            style="display: none"
+          >
+            Disconnect
+          </button>
+        </div>
+        <div id="response" style="border: 1px solid cornflowerblue; background-color: #e6f3ff; padding: 5px; margin-top: 5px; text-align: right; min-width: 250px; font-size: 0.9em; min-height: 1.2em; box-sizing: border-box;"></div>
       </div>
     </div>
 
@@ -50,13 +53,13 @@
           <div>
             <label for="filledJsonDisplay">Filled JSON (to Send):</label>
             <pre id="filledJsonDisplay"></pre>
-            <button type="button" id="sendButton" title="Send command to connected device">Send</button>
           </div>
         </div>
-
+        
         <div id="variableInputsContainer">
           <!-- Dynamic input fields will go here -->
         </div>
+        <button type="button" id="sendButton" title="Send command to connected device" style="max-width: 100px;">Send</button>
 
         <!-- <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
           <label for="rawTextInput" style="font-weight: bold;">Raw Text Command:</label>
@@ -65,8 +68,6 @@
             <button type="button" id="sendRawTextButton" title="Send command to connected device">Send Text</button>
           </div>
         </div> -->
-
-        <div id="response"></div>
 
         <div id="messagesContainer">
           <div style="display: flex; align-items: center; gap: 5px;">

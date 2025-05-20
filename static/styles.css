@@ -9,23 +9,25 @@ body {
     overflow-x: auto;
     white-space: nowrap;
 }
-.tab { padding: 10px 15px; cursor: pointer; border: 1px solid #ccc; border-bottom: none; margin-right: 5px; background-color: #f1f1f1; }
-.tab.active { background-color: #ddd; }
+.tab { padding: 10px 15px; cursor: pointer; border: 1px solid #ccc; border-bottom: none; margin-right: 5px; background-color: #e9e9ff; }
+.tab.active { background-color: #b2b2ff; }
 
 /* General Button Styling */
 button, input[type="button"], input[type="submit"] {
     padding: 8px 15px;
-    border: 1px solid #ccc;
-    background-color: #f0f0f0;
-    cursor: pointer;
+    background-color: #a0c0ff;
+    color: rgb(0, 0, 0);
+    border: 1px solid #000000;
     border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
     font-size: 0.9em;
     font-weight: normal;
     transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 button:hover, input[type="button"]:hover, input[type="submit"]:hover {
-    background-color: #e0e0e0;
+    background-color: #6799ff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -114,13 +116,18 @@ pre#rawJsonDisplay, pre#filledJsonDisplay {
     overflow-x: auto; 
     overflow-y: hidden;
     white-space: pre; 
-    word-break: normal; 
-    background-color: white;
+    word-break: normal;
+}
+pre#rawJsonDisplay {
+    background-color: #fffae8;
+}
+pre#filledJsonDisplay {
+    background-color: #e6ffec;
 }
 
 /* Highlight styles */
-.highlight-yellow { background-color: #ffed4a; }
-.highlight-green { background-color: #d2f8d2; }
+.highlight-yellow { background-color: #ffea31; }
+.highlight-green { background-color: #4eff4e; }
 
 #variableInputsContainer {
     margin-top: 5px; 
