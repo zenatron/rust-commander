@@ -1,17 +1,8 @@
+# Linux
 [tasks.build-linux]
 description = "Build for Linux"
 command = "cargo"
 args = ["build", "--target", "x86_64-unknown-linux-gnu"]
-
-[tasks.rename-linux]
-description = "Rename Linux binary with version"
-script = [
-    '''
-    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-    mv target/x86_64-unknown-linux-gnu/debug/rust-commander target/x86_64-unknown-linux-gnu/debug/rust-commander-linux-$version || true
-    '''
-]
-dependencies = ["build-linux"]
 
 [tasks.build-release-linux]
 description = "Build for Linux with release profile"
@@ -28,42 +19,47 @@ script = [
 ]
 dependencies = ["build-release-linux"]
 
+# # Windows (MSVC)
+# [tasks.build-windows]
+# description = "Build for Windows"
+# command = "cargo"
+# args = ["build", "--target", "x86_64-pc-windows-msvc"]
+
+# [tasks.build-release-windows]
+# description = "Build for Windows with release profile"
+# command = "cargo"
+# args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
+
+# [tasks.rename-release-windows]
+# description = "Rename Windows release binary with version"
+# script = [
+#   "powershell -ExecutionPolicy Bypass -File scripts\\rename-release-windows.ps1"
+# ]
+# dependencies = ["build-release-windows"]
+
+# Windows (GNU)
 [tasks.build-windows]
 description = "Build for Windows"
 command = "cargo"
-args = ["build", "--target", "x86_64-pc-windows-msvc"]
-
-[tasks.rename-windows]
-description = "Rename Windows binary with version"
-script = [
-    '''
-    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-    mv target/x86_64-pc-windows-msvc/debug/rust-commander.exe target/x86_64-pc-windows-msvc/debug/rust-commander-win-$version.exe || true
-    '''
-]
-dependencies = ["windows-build"]
+args = ["build", "--target", "x86_64-pc-windows-gnu"]
 
 [tasks.build-release-windows]
 description = "Build for Windows with release profile"
 command = "cargo"
-args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
+args = ["build", "--target", "x86_64-pc-windows-gnu", "--release"]
 
 [tasks.rename-release-windows]
 description = "Rename Windows release binary with version"
 script = [
-  "powershell -ExecutionPolicy Bypass -File scripts\\rename-release-windows.ps1"
+    '''
+    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+    mv target/x86_64-pc-windows-gnu/release/rust-commander.exe target/x86_64-pc-windows-gnu/release/rust-commander-windows-$version.exe || true
+    '''
+    # "powershell -ExecutionPolicy Bypass -File scripts\\rename-release-windows.ps1" # not needed for WSL (GNU)
 ]
 dependencies = ["build-release-windows"]
 
-[tasks.build-windows-gnu]
-description = "Build for Windows with GNU toolchain"
-command = "cargo"
-args = ["build", "--target", "x86_64-pc-windows-gnu"]
-
-[tasks.build-all]
-description = "Build for Linux and Windows"
-dependencies = ["rename-linux", "rename-windows"]
-
-[tasks.build-release-all]
+# Linux and Windows (release)
+[tasks.rename-release-all]
 description = "Build for Linux and Windows with release profile"
 dependencies = ["rename-release-linux", "rename-release-windows"]
