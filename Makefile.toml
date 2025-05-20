@@ -50,8 +50,9 @@ args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
 
 [tasks.rename-release-windows]
 description = "Rename Windows release binary with version"
-script_runner = "powershell"
-script = ["./scripts/rename-release-windows.ps1"]
+script = [
+  "powershell -ExecutionPolicy Bypass -File scripts\\rename-release-windows.ps1"
+]
 dependencies = ["build-release-windows"]
 
 [tasks.build-all]
