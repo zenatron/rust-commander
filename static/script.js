@@ -27,6 +27,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const rawTextInputElement = document.getElementById("rawTextInput");
   const sendRawTextButtonElement = document.getElementById("sendRawTextButton");
 
+  // Elements for saving commands
+  const saveCommandNameInput = document.getElementById("saveCommandName");
+  const saveCommandButton = document.getElementById("saveCommandButton");
+
   let commandsData = {};
   let firstTabInitialized = false;
   let currentCommandTemplate = null;
@@ -422,6 +426,217 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error sending raw text command:", error);
             responseDiv.textContent = `Error: ${error.message}`;
         }
+    });
+  }
+
+  // Save command functionality
+  if (saveCommandButton) {
+    saveCommandButton.addEventListener("click", async () => {
+      const commandName = saveCommandNameInput.value.trim();
+      
+      if (!commandName) {
+        responseDiv.textContent = "Error: Please enter a command name.";
+        return;
+      }
+      
+      if (!currentFilledCommand) {
+        responseDiv.textContent = "Error: No command selected or filled.";
+        return;
+      }
+      
+      // Check for empty variable inputs
+      const variableInputs = variableInputsContainer.querySelectorAll("input[type='text']");
+      let allVariablesFilled = true;
+      variableInputs.forEach(input => {
+        if (input.value.trim() === "") {
+          allVariablesFilled = false;
+          input.style.borderColor = "red";
+        } else {
+          input.style.borderColor = "#ccc";
+        }
+      });
+      
+      if (!allVariablesFilled) {
+        responseDiv.textContent = "Error: Please fill in all variable fields before saving.";
+        return;
+      }
+      
+      responseDiv.textContent = "Choose how to save your command...";
+      
+      // Create modal dialog for save options
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.5); z-index: 1000; display: flex; 
+        align-items: center; justify-content: center;
+      `;
+      
+      const dialog = document.createElement('div');
+      dialog.style.cssText = `
+        background: white; padding: 20px; border-radius: 8px; 
+        max-width: 500px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      `;
+      
+      dialog.innerHTML = `
+        <h3 style="margin-top: 0;">Save Command: "${commandName}"</h3>
+        <p>Choose how you want to save this command:</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0;">
+          <button id="saveToNewFile" style="padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
+            <strong>Create New File</strong><br>
+            <small style="opacity: 0.9;">Download a new JSON file with this command</small>
+          </button>
+          <button id="saveToExistingFile" style="padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
+            <strong>Add to Existing File</strong><br>
+            <small style="opacity: 0.9;">Select a JSON file to add this command to</small>
+          </button>
+          <button id="cancelSave" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Cancel
+          </button>
+        </div>
+        <input type="file" id="fileSelector" accept=".json" style="display: none;">
+      `;
+      
+      modal.appendChild(dialog);
+      document.body.appendChild(modal);
+      
+      const fileSelector = dialog.querySelector('#fileSelector');
+      const saveToNewFile = dialog.querySelector('#saveToNewFile');
+      const saveToExistingFile = dialog.querySelector('#saveToExistingFile');
+      const cancelSave = dialog.querySelector('#cancelSave');
+      
+      // Create new file
+      saveToNewFile.addEventListener('click', () => {
+        const commandsToSave = {
+          "Saved Commands": {
+            [commandName]: currentFilledCommand
+          }
+        };
+        
+        const jsonString = JSON.stringify(commandsToSave, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${commandName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_commands.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        document.body.removeChild(modal);
+        responseDiv.textContent = `Command '${commandName}' downloaded as new file!`;
+        saveCommandNameInput.value = "";
+      });
+      
+      // Add to existing file
+      saveToExistingFile.addEventListener('click', () => {
+        fileSelector.click();
+      });
+      
+      // Handle file selection
+      fileSelector.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+          responseDiv.textContent = `Reading ${file.name}...`;
+          const fileContent = await file.text();
+          let existingData;
+          
+          try {
+            existingData = JSON.parse(fileContent);
+          } catch (e) {
+            responseDiv.textContent = "Error: Selected file is not valid JSON.";
+            document.body.removeChild(modal);
+            return;
+          }
+          
+          // Ensure proper structure
+          if (!existingData || typeof existingData !== 'object') {
+            existingData = { "Saved Commands": {} };
+          }
+          
+          if (!existingData["Saved Commands"]) {
+            existingData["Saved Commands"] = {};
+          }
+          
+          // Add new command
+          existingData["Saved Commands"][commandName] = currentFilledCommand;
+          
+          // Show update confirmation
+          dialog.innerHTML = `
+            <h3 style="margin-top: 0;">Update File: "${file.name}"</h3>
+            <p style="color: #28a745;">SUCCESS: Command "${commandName}" will be added to this file.</p>
+            <p><strong>Existing commands in file:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px; max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+              ${Object.keys(existingData["Saved Commands"] || {}).map(cmd => 
+                cmd === commandName ? 
+                  `<li style="color: #28a745; font-weight: bold;">${cmd} (NEW)</li>` : 
+                  `<li>${cmd}</li>`
+              ).join('')}
+            </ul>
+            <p style="font-size: 0.9em; color: #666; margin: 15px 0;">
+              <strong>Note:</strong> This will download an updated version of "${file.name}". 
+              You'll need to replace your original file with the downloaded version.
+            </p>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+              <button id="confirmUpdate" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Download Updated File
+              </button>
+              <button id="cancelUpdate" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Cancel
+              </button>
+            </div>
+          `;
+          
+          const confirmUpdate = dialog.querySelector('#confirmUpdate');
+          const cancelUpdate = dialog.querySelector('#cancelUpdate');
+          
+          confirmUpdate.addEventListener('click', () => {
+            // Download the updated file with original name
+            const jsonString = JSON.stringify(existingData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name; // Keep exact original filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            document.body.removeChild(modal);
+            responseDiv.textContent = `SUCCESS: Updated "${file.name}" downloaded! Replace your original file with the downloaded version.`;
+            saveCommandNameInput.value = "";
+          });
+          
+          cancelUpdate.addEventListener('click', () => {
+            document.body.removeChild(modal);
+            responseDiv.textContent = "Update cancelled.";
+          });
+          
+        } catch (error) {
+          console.error("Error processing file:", error);
+          responseDiv.textContent = `Error processing file: ${error.message}`;
+          document.body.removeChild(modal);
+        }
+      });
+      
+      // Cancel
+      cancelSave.addEventListener('click', () => {
+        document.body.removeChild(modal);
+        responseDiv.textContent = "Save operation cancelled.";
+      });
+      
+      // Close modal on background click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+          responseDiv.textContent = "Save operation cancelled.";
+        }
+      });
     });
   }
 

@@ -13,6 +13,8 @@ use rust_embed::RustEmbed;
 use mime_guess;
 use local_ip_address::local_ip;
 use colored::*;
+use std::fs;
+use std::path::Path;
 
 // Message type for WebSocket actor to send text to its client
 #[derive(Message)]
@@ -120,6 +122,13 @@ struct ConnectPayload {
 #[derive(Deserialize)]
 struct TextCommandPayload {
     text_command: String,
+}
+
+#[derive(Deserialize)]
+struct SaveCommandPayload {
+    command_name: String,
+    command_data: JsonValue,
+    file_path: String,
 }
 
 #[post("/connect")]
@@ -348,6 +357,53 @@ async fn send_text_command_route(
         HttpResponse::Ok().body(format!("Text command sent: {}", command_to_send))
     } else {
         HttpResponse::InternalServerError().body("Not connected to any TCP socket.")
+    }
+}
+
+#[post("/api/save-command")]
+async fn save_command(payload: web::Json<SaveCommandPayload>) -> impl Responder {
+    let file_path = &payload.file_path;
+    
+    // Read existing file or create new structure
+    let mut commands_data = if Path::new(file_path).exists() {
+        match fs::read_to_string(file_path) {
+            Ok(content) => {
+                match serde_json::from_str::<JsonValue>(&content) {
+                    Ok(data) => data,
+                    Err(_) => {
+                        // If file exists but is invalid JSON, create new structure
+                        serde_json::json!({"Saved Commands": {}})
+                    }
+                }
+            },
+            Err(_) => serde_json::json!({"Saved Commands": {}})
+        }
+    } else {
+        serde_json::json!({"Saved Commands": {}})
+    };
+    
+    // Ensure "Saved Commands" section exists
+    if !commands_data.is_object() {
+        commands_data = serde_json::json!({"Saved Commands": {}});
+    }
+    
+    if commands_data.get("Saved Commands").is_none() {
+        commands_data["Saved Commands"] = serde_json::json!({});
+    }
+    
+    // Add the new command
+    commands_data["Saved Commands"][&payload.command_name] = payload.command_data.clone();
+    
+    // Write back to file
+    match fs::write(file_path, serde_json::to_string_pretty(&commands_data).unwrap()) {
+        Ok(_) => {
+            println!("Command '{}' saved to: {}", &payload.command_name, file_path);
+            HttpResponse::Ok().body(format!("Command '{}' saved successfully to {}", &payload.command_name, file_path))
+        },
+        Err(e) => {
+            println!("Error saving command to {}: {}", file_path, e);
+            HttpResponse::InternalServerError().body(format!("Error saving command: {}", e))
+        }
     }
 }
 
