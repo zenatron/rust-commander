@@ -17,14 +17,21 @@ export class ConnectionManager {
       
       const text = await response.text();
       if (response.ok) {
+        // Send system message about successful TCP connection
+        this.onMessage(`TCP Connected to ${socketPath}`, "system_info");
+        
         // Re-establish WebSocket connection after successful TCP connection
         this.establishWebSocket();
         return { success: true, message: text };
       } else {
+        // Send system message about failed TCP connection
+        this.onMessage(`TCP Connection failed: ${text}`, "system_error");
         return { success: false, message: text };
       }
     } catch (error) {
       console.error("Error connecting to TCP socket:", error);
+      // Send system message about connection error
+      this.onMessage(`TCP Connection error: ${error.message}`, "system_error");
       return { success: false, message: error.message };
     }
   }
@@ -42,12 +49,18 @@ export class ConnectionManager {
         if (this.persistentSocket && this.persistentSocket.readyState === WebSocket.OPEN) {
           this.persistentSocket.close(1000, "User initiated disconnect");
         }
+        // Send system message about successful disconnection
+        this.onMessage("TCP Disconnected by user", "system_info");
         return { success: true, message: text };
       } else {
+        // Send system message about failed disconnection
+        this.onMessage(`TCP Disconnect failed: ${text}`, "system_error");
         return { success: false, message: text };
       }
     } catch (error) {
       console.error("Error disconnecting TCP socket:", error);
+      // Send system message about disconnection error
+      this.onMessage(`TCP Disconnect error: ${error.message}`, "system_error");
       return { success: false, message: error.message };
     }
   }
@@ -69,6 +82,7 @@ export class ConnectionManager {
     this.persistentSocket.onopen = () => {
       console.log("WebSocket connected");
       this.onStatusChange(true);
+      this.onMessage("WebSocket connected and ready to receive messages", "system_info");
     };
 
     this.persistentSocket.onmessage = (event) => {
@@ -79,13 +93,13 @@ export class ConnectionManager {
       if (event.data === "TCP_CONNECTION_CLOSED" || 
           event.data === "TCP_CONNECTION_CLOSED_OR_STREAM_ENDED") {
         messageContent = "--- TCP Connection Closed by Server ---";
-        messageType = "system";
+        messageType = "system_warn";
         if (this.persistentSocket && this.persistentSocket.readyState === WebSocket.OPEN) {
           this.persistentSocket.close(1000, "TCP connection closed by peer");
         }
       } else if (event.data.startsWith("TCP_READ_ERROR:")) {
         messageContent = `--- TCP Read Error: ${event.data.substring("TCP_READ_ERROR:".length)} ---`;
-        messageType = "system";
+        messageType = "system_error";
         if (this.persistentSocket && this.persistentSocket.readyState === WebSocket.OPEN) {
           this.persistentSocket.close(1000, "TCP read error");
         }
@@ -117,12 +131,17 @@ export class ConnectionManager {
       this.persistentSocket = null;
       this.onStatusChange(false);
       
+      const isNormalClosure = event.code === 1000 || event.code === 1001;
+      const messageType = isNormalClosure ? "system_info" : "system_warn";
+      this.onMessage(`WebSocket disconnected: ${reason}`, messageType);
+      
       return reason;
     };
 
     this.persistentSocket.onerror = (error) => {
       console.error("WebSocket Error:", error);
       this.onStatusChange(false);
+      this.onMessage("WebSocket connection error", "system_error");
     };
   }
 
@@ -136,12 +155,18 @@ export class ConnectionManager {
       });
       
       const text = await response.text();
+      if (!response.ok) {
+        // Send system message about command sending error
+        this.onMessage(`Command send error: ${text}`, "system_error");
+      }
       return {
         success: response.ok,
         message: text
       };
     } catch (error) {
       console.error("Error sending command:", error);
+      // Send system message about command sending error
+      this.onMessage(`Command send error: ${error.message}`, "system_error");
       return {
         success: false,
         message: error.message
@@ -159,12 +184,18 @@ export class ConnectionManager {
       });
       
       const text = await response.text();
+      if (!response.ok) {
+        // Send system message about text command sending error
+        this.onMessage(`Text command send error: ${text}`, "system_error");
+      }
       return {
         success: response.ok,
         message: text
       };
     } catch (error) {
       console.error("Error sending text command:", error);
+      // Send system message about text command sending error
+      this.onMessage(`Text command send error: ${error.message}`, "system_error");
       return {
         success: false,
         message: error.message

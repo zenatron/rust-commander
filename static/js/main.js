@@ -39,9 +39,9 @@ class App {
     
     if (result.success) {
       this.uiManager.populateCommandPalette(result.data);
-      this.uiManager.showResponse('Commands loaded successfully.');
+      this.uiManager.showResponse('Commands loaded successfully.', true, "system_info");
     } else {
-      this.uiManager.showResponse(`Error loading commands: ${result.error}`);
+      this.uiManager.showResponse(`Error loading commands: ${result.error}`, true, "system_error");
     }
   }
 
@@ -50,17 +50,23 @@ class App {
     document.getElementById("connectButton_header").addEventListener("click", async () => {
       const socketPath = document.getElementById("socket_path_header").value.trim();
       if (!socketPath) {
-        this.uiManager.showResponse('Please enter a socket path');
+        this.uiManager.showResponse('Please enter a socket path', true, "system_warn");
         return;
       }
 
+      // Get the result from the connection manager
       const result = await this.connectionManager.connectTCP(socketPath);
-      this.uiManager.showResponse(result.message);
+      // Apply appropriate styling based on success/failure
+      const messageType = result.success ? "system_info" : "system_error";
+      this.uiManager.showResponse(result.message, false, messageType);
     });
 
     document.getElementById("disconnectButton_header").addEventListener("click", async () => {
+      // Get the result from the disconnection manager
       const result = await this.connectionManager.disconnectTCP();
-      this.uiManager.showResponse(result.message);
+      // Apply appropriate styling based on success/failure
+      const messageType = result.success ? "system_info" : "system_error";
+      this.uiManager.showResponse(result.message, false, messageType);
     });
 
     // Load Commands File (original upload button)
@@ -76,9 +82,9 @@ class App {
 
       if (result.success) {
         this.uiManager.populateCommandPalette(result.data);
-        this.uiManager.showResponse(`Commands loaded from ${file.name}`);
+        this.uiManager.showResponse(`Commands loaded from ${file.name}`, true, "system_info");
       } else {
-        this.uiManager.showResponse(`Error loading ${file.name}: ${result.error}`);
+        this.uiManager.showResponse(`Error loading ${file.name}: ${result.error}`, true, "system_error");
       }
     });
 
@@ -92,7 +98,8 @@ class App {
       if (result.success) {
         this.uiManager.addMessage(JSON.stringify(command), "sent");
       } else {
-        this.uiManager.showResponse(`Send error: ${result.message}`);
+        // Apply error styling to the response div
+        this.uiManager.showResponse(`Send error: ${result.message}`, false, "system_error");
       }
     });
 
@@ -106,7 +113,7 @@ class App {
     document.getElementById("sendRawTextButton").addEventListener("click", async () => {
       const textCommand = document.getElementById("rawTextInput").value.trim();
       if (!textCommand) {
-        this.uiManager.showResponse('Please enter a text command');
+        this.uiManager.showResponse('Please enter a text command', true, "system_warn");
         return;
       }
 
@@ -116,7 +123,8 @@ class App {
         this.uiManager.addMessage(textCommand, "sent_text");
         document.getElementById("rawTextInput").value = "";
       } else {
-        this.uiManager.showResponse(`Send error: ${result.message}`);
+        // Apply error styling to the response div
+        this.uiManager.showResponse(`Send error: ${result.message}`, false, "system_error");
       }
     });
 
@@ -145,7 +153,7 @@ class App {
     const allFilled = this.commandManager.areAllVariablesFilled(container);
     
     if (!allFilled) {
-      this.uiManager.showResponse('Please fill in all required variables');
+      this.uiManager.showResponse('Please fill in all required variables', true, "system_warn");
       return false;
     }
     return true;
@@ -153,7 +161,7 @@ class App {
 
   validateAndSendCommand() {
     if (!this.connectionManager.isWebSocketConnected()) {
-      this.uiManager.showResponse('WebSocket not connected');
+      this.uiManager.showResponse('WebSocket not connected', true, "system_error");
       return false;
     }
 

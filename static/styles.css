@@ -111,7 +111,6 @@ input[type="text"]:focus {
 }
 
 #response {
-    background-color: rgb(255, 182, 133);
     border: 1px solid black;
     border-radius: 4px;
     padding: 5px;
@@ -121,6 +120,23 @@ input[type="text"]:focus {
     font-size: 0.9em;
     min-height: 1.2em;
     box-sizing: border-box;
+}
+
+/* Response div message types */
+.response-info {
+    background-color: #e0e0e0;
+    color: #3a3a3a;
+}
+
+.response-warn {
+    background-color: #fff0a3;
+    color: #856404;
+}
+
+.response-error {
+    background-color: #ffcccb;
+    color: #721c24;
+    font-weight: bold;
 }
 
 pre#rawJsonDisplay, pre#filledJsonDisplay {
@@ -246,7 +262,8 @@ pre#messagesDisplay {
 }
 
 /* Legend styling - base properties */
-.message-sent-legend, .message-received-legend, .message-system-legend {
+.message-sent-legend, .message-received-legend, 
+.message-system_info-legend, .message-system_warn-legend, .message-system_error-legend {
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 0.85em;
@@ -264,10 +281,23 @@ pre#messagesDisplay {
     color: #000000;
 }
 
-/* System message styling (both for messages and legend) */
-.message-system, .message-system-legend {
-    background-color: #ffe5bd;
-    color: #555555;
+/* System message styling tiers */
+.message-system_info, .message-system_info-legend {
+    background-color: #e0e0e0;
+    color: #3a3a3a;
+    font-style: italic;
+}
+
+.message-system_warn, .message-system_warn-legend {
+    background-color: #fff0a3;
+    color: #856404;
+    font-style: italic;
+}
+
+.message-system_error, .message-system_error-legend {
+    background-color: #ffcccb;
+    color: #721c24;
+    font-weight: bold;
     font-style: italic;
 }
 

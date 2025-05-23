@@ -21,89 +21,99 @@ export class UIManager {
   // Initialize UI
   initialize() {
     this.updateConnectionStatus(false);
+    
+    // Set initial style for response div
+    const responseDiv = document.getElementById("response");
+    responseDiv.classList.add("response-info");
   }
 
   // Command palette functionality - create tabs and command lists
   populateCommandPalette(commandsData) {
     const tabContainer = document.getElementById("tabContainer");
     const tabContentContainer = document.getElementById("tabContentContainer");
-    
+
     // Clear existing content
     tabContainer.innerHTML = "";
     tabContentContainer.innerHTML = "";
+    // Clear related UI elements
+    const rawJsonDisplayElement = document.getElementById("rawJsonDisplay");
+    const filledJsonDisplayElement = document.getElementById("filledJsonDisplay");
+    const variableInputsContainer = document.getElementById("variableInputsContainer");
+    if (rawJsonDisplayElement) rawJsonDisplayElement.innerHTML = "";
+    if (filledJsonDisplayElement) filledJsonDisplayElement.innerHTML = "";
+    if (variableInputsContainer) variableInputsContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
 
-    // Helper function to recursively collect all commands from nested objects
-    const collectCommands = (obj, prefix = "") => {
-      const commands = [];
-      
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          const value = obj[key];
-          const fullKey = prefix ? `${prefix}.${key}` : key;
-          
-          if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-            // If it's an object, check if it looks like a command or if it contains commands
-            const hasCommandProperties = Object.keys(value).some(k => 
-              typeof value[k] !== "object" || Array.isArray(value[k])
-            );
-            
-            if (hasCommandProperties) {
-              // This is a command object
-              commands.push({ name: fullKey, command: value });
-            } else {
-              // This contains nested commands, recurse
-              commands.push(...collectCommands(value, fullKey));
-            }
-          } else {
-            // This is a direct command value
-            commands.push({ name: fullKey, command: value });
+
+    if (Object.keys(commandsData).length === 0) {
+      tabContainer.textContent = "No commands loaded or error in loading.";
+      return;
+    }
+
+    let firstTabInitialized = false;
+
+    const topLevelKeys = Object.keys(commandsData);
+    topLevelKeys.forEach((key, index) => {
+      const nestedCommands = commandsData[key];
+      if (typeof nestedCommands !== 'object' || nestedCommands === null || Object.keys(nestedCommands).length === 0) {
+        console.warn(`Skipping tab ${key} due to invalid or empty nestedCommands`);
+        return; // Skip if not an object or is empty
+      }
+
+      const tabButton = document.createElement("div");
+      tabButton.classList.add("tab");
+      tabButton.textContent = key;
+      // tabButton.dataset.tabKey = key; // Not strictly needed if using textContent for activateTab
+      tabContainer.appendChild(tabButton);
+
+      const tabContent = document.createElement("div");
+      tabContent.classList.add("tab-content");
+      tabContent.id = `tab-${key.replace(/\s+/g, "-")}`; // Ensure IDs are valid
+      tabContentContainer.appendChild(tabContent);
+
+      const commandListUL = document.createElement("ul");
+      commandListUL.classList.add("command-list");
+
+      for (const commandName in nestedCommands) {
+        if (nestedCommands.hasOwnProperty(commandName)) {
+          const commandData = nestedCommands[commandName];
+          const listItem = document.createElement("li");
+          listItem.textContent = commandName;
+          // Store the actual command object or its JSON string. Storing object directly is fine if not too large.
+          // For consistency with previous patterns and explicit data handling:
+          try {
+            listItem.dataset.commandJsonString = JSON.stringify(commandData);
+          } catch (e) {
+            console.error("Error stringifying command data for palette:", commandName, commandData, e);
+            // Skip adding this command if it can't be stringified
+            continue;
           }
+
+
+          listItem.addEventListener("click", (e) => {
+            const cmdJsonString = e.target.dataset.commandJsonString;
+            if (cmdJsonString) {
+               // The app instance (window.commanderApp) will handle this
+              window.commanderApp.handleCommandSelection(cmdJsonString);
+            } else {
+              console.error("Command JSON string not found on list item", e.target);
+              this.showResponse("Error: Could not load selected command details.", true, "system_error");
+            }
+          });
+          commandListUL.appendChild(listItem);
         }
       }
-      
-      return commands;
-    };
+      tabContent.appendChild(commandListUL);
 
-    // Create tabs for each top-level key
-    for (const tabKey in commandsData) {
-      if (commandsData.hasOwnProperty(tabKey)) {
-        const tabCommands = collectCommands(commandsData[tabKey]);
-        
-        // Create tab button
-        const tab = document.createElement("div");
-        tab.className = "tab";
-        tab.textContent = tabKey;
-        tab.addEventListener("click", () => this.activateTab(tab, tabKey));
-        tabContainer.appendChild(tab);
-
-        // Create tab content
-        const tabContent = document.createElement("div");
-        tabContent.className = "tab-content";
-        tabContent.id = `tab-${tabKey}`;
-        
-        const commandList = document.createElement("ul");
-        commandList.className = "command-list";
-        
-        // Add all commands for this tab
-        tabCommands.forEach(({ name, command }) => {
-          const listItem = document.createElement("li");
-          listItem.textContent = name;
-          listItem.addEventListener("click", () => {
-            window.commanderApp.handleCommandSelection(JSON.stringify(command));
-          });
-          commandList.appendChild(listItem);
-        });
-        
-        tabContent.appendChild(commandList);
-        tabContentContainer.appendChild(tabContent);
+      if (!firstTabInitialized && index === 0) {
+        // Use the activateTab method to ensure consistency
+        this.activateTab(tabButton, key);
+        firstTabInitialized = true;
       }
-    }
-    
-    // Activate first tab
-    const firstTab = tabContainer.querySelector(".tab");
-    if (firstTab) {
-      this.activateTab(firstTab, firstTab.textContent);
-    }
+
+      tabButton.addEventListener("click", () => {
+        this.activateTab(tabButton, key);
+      });
+    });
   }
 
   // Activate a tab
@@ -114,7 +124,9 @@ export class UIManager {
 
     // Add active class to selected tab and content
     activeTab.classList.add('active');
-    const content = document.getElementById(`tab-${tabKey}`);
+    // Ensure the tabKey used for ID lookup is processed the same way as when the ID was created
+    const contentId = `tab-${tabKey.replace(/\s+/g, "-")}`;
+    const content = document.getElementById(contentId);
     if (content) {
       content.classList.add('active');
     }
@@ -139,10 +151,27 @@ export class UIManager {
     }
   }
 
-  // Show response in the response div
-  showResponse(message) {
+  // Show response in the response div and add to message panel
+  showResponse(message, addSystemMessage = true, messageType = "system_info") {
     const responseDiv = document.getElementById("response");
     responseDiv.textContent = message;
+    
+    // Apply appropriate styling to the response div based on message type
+    responseDiv.className = "";
+    if (messageType === "system_info") {
+      responseDiv.classList.add("response-info");
+    } else if (messageType === "system_warn") {
+      responseDiv.classList.add("response-warn");
+    } else if (messageType === "system_error") {
+      responseDiv.classList.add("response-error");
+    } else {
+      responseDiv.classList.add("response-info"); // Default
+    }
+    
+    // Also add the message to the message panel with system styling if requested
+    if (addSystemMessage) {
+      this.addMessage(message, messageType);
+    }
   }
 
   // Update raw JSON display
@@ -221,6 +250,11 @@ export class UIManager {
 
   // Message display functionality
   addMessage(messageContent, messageType = "received") {
+    // Handle backward compatibility for old message types
+    if (messageType === "system") {
+      messageType = "system_info";
+    }
+    
     this.messageHistory.push({ 
       id: this.messageId++, 
       content: messageContent, 

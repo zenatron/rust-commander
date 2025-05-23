@@ -88,12 +88,14 @@
         </div>
 
         <div id="messagesContainer">
-          <div style="display: flex; align-items: center; gap: 5px;">
+          <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
             <label for="messagesDisplay" style="font-weight: bold; margin-bottom: 0;">Messages:</label>
-            <span class="message-sent-legend" style="font-size: 0.85em;"> (sent)</span>
-            <span class="message-received-legend" style="font-size: 0.85em;"> (received)</span>
-            <span class="message-system-legend" style="font-size: 0.85em;"> (system)</span>
-            <button type="button" id="sortMessagesButton" title="Sort messages (newest first)" style="padding: 2px 5px; font-size: 0.8em;">Sort Newest First</button>
+            <span class="message-sent-legend"> (sent)</span>
+            <span class="message-received-legend"> (received)</span>
+            <span class="message-system_info-legend"> (info)</span>
+            <span class="message-system_warn-legend"> (warning)</span>
+            <span class="message-system_error-legend"> (error)</span>
+            <button type="button" id="sortMessagesButton" title="Sort messages (newest first)" style="padding: 2px 5px; font-size: 0.8em; margin-left: auto;">Sort Newest First</button>
           </div>
           <pre id="messagesDisplay"></pre>
         </div>
