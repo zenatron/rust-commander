@@ -29,6 +29,53 @@ export class CommandManager {
     }
   }
 
+  // New method: Load commands directly from a JSON object (used for palettes)
+  loadCommandsFromJson(jsonData) {
+    try {
+      // Validate if jsonData is an object (basic validation)
+      if (typeof jsonData !== 'object' || jsonData === null) {
+        throw new Error("Invalid JSON data provided. Must be an object.");
+      }
+      // If jsonData is the full palette object like { name: "paletteName", commands: { actual_commands } }
+      // we need to store only the actual_commands part.
+      // If jsonData is already just the commands map (e.g. from an old file format), this will need adjustment
+      // Assuming jsonData from palette loading is always the full Palette object from the backend.
+      if (jsonData.hasOwnProperty('commands') && typeof jsonData.name === 'string') {
+        this.commandsData = jsonData.commands; // Store only the commands map
+      } else {
+        // If it doesn't look like a full Palette object, assume it's already just the commands map.
+        // This provides some backward compatibility if a raw commands file (not a palette) was loaded.
+        this.commandsData = jsonData; 
+      }
+      
+      this.clearCurrentCommand(); 
+      return { success: true, data: this.commandsData };
+    } catch (error) {
+      console.error("Error loading commands from JSON:", error);
+      this.commandsData = {}; // Clear commands data on error
+      this.clearCurrentCommand();
+      return { success: false, error: error.message };
+    }
+  }
+  
+  // New method: Get all commands (the entire commandsData object)
+  getAllCommands() {
+    return this.commandsData;
+  }
+
+  // New method: Clear all loaded commands and current selection
+  clearAllCommands() {
+    this.commandsData = {};
+    this.clearCurrentCommand();
+  }
+  
+  // New method: Clear only the current command selection
+  clearCurrentCommand() {
+    this.currentCommandTemplate = null;
+    this.currentFilledCommand = null;
+    this.activeVariablePaths = [];
+  }
+
   // Set current command
   setCurrentCommand(commandJson) {
     this.currentCommandTemplate = JSON.parse(commandJson);

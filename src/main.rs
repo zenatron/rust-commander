@@ -6,6 +6,7 @@ mod types;
 mod state;
 mod websocket;
 mod handlers;
+mod palette_manager;
 
 use state::AppState;
 use handlers::{connect_route, disconnect_route, send_command, send_text_command_route, version_route, embedded_file_handler};
@@ -27,8 +28,15 @@ async fn main() -> std::io::Result<()> {
             .service(disconnect_route)
             .service(send_command)
             .service(send_text_command_route)
-            .service(ws_route)
             .service(version_route)
+            .service(handlers::list_palettes_handler)
+            .service(handlers::create_palette)
+            .service(handlers::update_palette)
+            .service(handlers::get_palette_handler)
+            .service(handlers::delete_palette_handler)
+            .service(handlers::import_palette_handler)
+            .service(handlers::export_palette_handler)
+            .service(ws_route)
             .default_service(web::route().to(embedded_file_handler))
     })
     .bind(format!("{}:{}", server_address, server_port))?

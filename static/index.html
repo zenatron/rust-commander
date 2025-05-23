@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <title>JSON Command Sender</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -12,7 +13,6 @@
           <p id="projectVersion" style="font-size: 0.75em; color: #888; margin: 0; line-height: 1;">v0.1.0</p>
         </div>
         <input type="file" id="commandFileUpload" accept=".json" style="display: none;" />
-        <button type="button" id="uploadCommandFileButton" title="Upload custom command palette (JSON)" style="margin-top: 5px;">Load Palette</button>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end;">
         <div id="header-controls">
@@ -37,6 +37,20 @@
       </div>
     </div>
 
+    <div id="palette-controls-container" class="palette-controls" style="display: flex; align-items: center; gap: 10px;">
+      <label for="paletteSelector" style="white-space: nowrap; font-weight: bold;">Palette Selection:</label>
+      <select id="paletteSelector" style="max-width: 250px; flex-shrink: 0;"></select>
+
+      <span id="paletteOptionsLabelText" style="margin-left: 15px; white-space: nowrap; font-weight: bold;">Palette Options:</span>
+      
+      <button type="button" id="createPaletteButton" title="Create New Palette">➕</button>
+      <button type="button" id="uploadCommandFileButton" title="Import Palette from File">📥</button>
+      <input type="file" id="paletteFileUpload" accept=".json" style="display: none;" />
+      <button type="button" id="savePaletteButton" title="Save Current Palette" disabled>💾</button>
+      <button type="button" id="editPaletteButton" title="Edit Palette" disabled>✏️</button>
+      <button type="button" id="deletePaletteButton" class="danger-button" title="Delete Current Palette" disabled>🗑️</button>
+    </div>
+
     <div class="tab-container" id="tabContainer">
       <!-- Tabs will be inserted here -->
     </div>
@@ -53,14 +67,14 @@
           <div>
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
               <label for="rawJsonDisplay">Raw JSON (Template):</label>
-              <button type="button" id="rawJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">Compact</button>
+              <button type="button" id="rawJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
             </div>
             <pre id="rawJsonDisplay"></pre>
           </div>
           <div>
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
               <label for="filledJsonDisplay">Filled JSON (to Send):</label>
-              <button type="button" id="filledJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">Compact</button>
+              <button type="button" id="filledJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
             </div>
             <pre id="filledJsonDisplay"></pre>
           </div>
@@ -97,6 +111,19 @@
         </div>
       </div>
     </div>
+
+    <div id="editPaletteModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" id="closeEditModal">&times;</span>
+        <h3>Edit Palette</h3>
+        <textarea id="paletteEditorTextarea" rows="20" style="width: 95%;"></textarea>
+        <div style="margin-top: 10px;">
+          <button type="button" id="savePaletteChangesButton">Save Changes</button>
+          <button type="button" id="cancelEditPaletteButton">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
   </body>
 </html>
