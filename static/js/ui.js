@@ -7,9 +7,7 @@ export class UIManager {
     this.isRawJsonExpanded = false;
     this.isFilledJsonExpanded = false;
     this.commandManager = null;
-    
-    // Initialize toggle buttons
-    // We'll initialize toggles after setting commandManager
+
     this.initializeResizeHandle();
   }
 
@@ -389,8 +387,6 @@ export class UIManager {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       
-      // The width is now directly set on commandPaletteContainer.style.width
-      // and should persist until the next resize operation or page reload.
     };
   }
 
@@ -429,12 +425,3 @@ export class UIManager {
     });
   }
 }
-
-// Global utility function for copy button (if needed)
-window.copyToClipboard = function(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    console.log("Copied to clipboard:", text);
-  }).catch(err => {
-    console.error("Failed to copy to clipboard:", err);
-  });
-}; 

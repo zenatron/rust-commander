@@ -110,35 +110,56 @@ class App {
     });
 
     // Raw Text Command (original elements)
-    document.getElementById("sendRawTextButton").addEventListener("click", async () => {
-      const textCommand = document.getElementById("rawTextInput").value.trim();
-      if (!textCommand) {
-        this.uiManager.showResponse('Please enter a text command', true, "system_warn");
-        return;
-      }
+    const sendRawTextButtonElement = document.getElementById("sendRawTextButton");
+    if (sendRawTextButtonElement) {
+      sendRawTextButtonElement.addEventListener("click", async () => {
+        const textCommand = document.getElementById("rawTextInput").value.trim();
+        if (!textCommand) {
+          this.uiManager.showResponse('Please enter a text command', true, "system_warn");
+          return;
+        }
 
-      const result = await this.connectionManager.sendTextCommand(textCommand);
-      
-      if (result.success) {
-        this.uiManager.addMessage(textCommand, "sent_text");
-        document.getElementById("rawTextInput").value = "";
-      } else {
-        // Apply error styling to the response div
-        this.uiManager.showResponse(`Send error: ${result.message}`, false, "system_error");
-      }
-    });
+        const result = await this.connectionManager.sendTextCommand(textCommand);
+        
+        if (result.success) {
+          this.uiManager.addMessage(textCommand, "sent_text");
+          // Ensure rawTextInput exists before trying to clear it
+          const rawTextInputElement = document.getElementById("rawTextInput");
+          if (rawTextInputElement) rawTextInputElement.value = ""; 
+        } else {
+          this.uiManager.showResponse(`Send error: ${result.message}`, false, "system_error");
+        }
+      });
+    } else {
+      console.warn('[main.js] sendRawTextButton element not found, skipping listener attachment.');
+    }
 
     // Enter key for text command
-    document.getElementById("rawTextInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        document.getElementById("sendRawTextButton").click();
-      }
-    });
+    const rawTextInputElement = document.getElementById("rawTextInput");
+    if (rawTextInputElement) {
+      rawTextInputElement.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          // Ensure sendRawTextButtonElement exists before trying to click it
+          if (sendRawTextButtonElement) sendRawTextButtonElement.click(); 
+        }
+      });
+    } else {
+      console.warn('[main.js] rawTextInput element not found, skipping keydown listener attachment.');
+    }
 
     // Sort Messages (original button)
-    document.getElementById("sortMessagesButton").addEventListener("click", () => {
-      this.uiManager.toggleMessageSort();
-    });
+    const sortButton = document.getElementById("sortMessagesButton");
+    if (sortButton) {
+      sortButton.addEventListener("click", () => {
+        if (this.uiManager && typeof this.uiManager.toggleMessageSort === 'function') {
+          this.uiManager.toggleMessageSort();
+        } else {
+          console.error('[main.js] this.uiManager or toggleMessageSort is not available.', this.uiManager);
+        }
+      });
+    } else {
+      console.warn('[main.js] sortMessagesButton element not found, skipping listener attachment.');
+    }
   }
 
   updateVariableInputs() {
