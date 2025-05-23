@@ -49,11 +49,17 @@
       <div id="formAndResponseArea">
         <div id="jsonDisplayAreasContainer">
           <div>
-            <label for="rawJsonDisplay">Raw JSON (Template):</label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+              <label for="rawJsonDisplay">Raw JSON (Template):</label>
+              <button type="button" id="rawJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">Compact</button>
+            </div>
             <pre id="rawJsonDisplay"></pre>
           </div>
           <div>
-            <label for="filledJsonDisplay">Filled JSON (to Send):</label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+              <label for="filledJsonDisplay">Filled JSON (to Send):</label>
+              <button type="button" id="filledJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">Compact</button>
+            </div>
             <pre id="filledJsonDisplay"></pre>
           </div>
         </div>
@@ -73,27 +79,40 @@
         
         <button type="button" id="sendButton" title="Send command to connected device" style="max-width: 100px;">Send</button>
 
-        <!-- <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
+        <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
           <label for="rawTextInput" style="font-weight: bold;">Raw Text Command:</label>
           <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
             <input type="text" id="rawTextInput" placeholder="Enter raw text command" style="flex-grow: 1; padding: 5px; border: 1px solid #ccc;">
             <button type="button" id="sendRawTextButton" title="Send command to connected device">Send Text</button>
           </div>
-        </div> -->
+        </div>
 
         <div id="messagesContainer">
           <div style="display: flex; align-items: center; gap: 5px;">
             <label for="messagesDisplay" style="font-weight: bold; margin-bottom: 0;">Messages:</label>
             <span class="message-sent-legend" style="font-size: 0.85em;"> (sent)</span>
             <span class="message-received-legend" style="font-size: 0.85em;"> (received)</span>
+            <span class="message-system-legend" style="font-size: 0.85em;"> (system)</span>
             <button type="button" id="sortMessagesButton" title="Sort messages (newest first)" style="padding: 2px 5px; font-size: 0.8em;">Sort Newest First</button>
           </div>
           <pre id="messagesDisplay"></pre>
-          <!-- Replaced textarea with pre -->
         </div>
       </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Save Modal -->
+    <div id="save-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h3>Save Command</h3>
+        <p>Choose how you want to save your command:</p>
+        <div class="modal-buttons">
+          <button id="create-new-file" class="btn-primary">Create New File</button>
+          <button id="add-to-existing" class="btn-secondary">Add to Existing File</button>
+          <button id="cancel-save" class="btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>

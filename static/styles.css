@@ -235,6 +235,7 @@ pre#messagesDisplay {
     word-break: break-all;
 }
 
+/* Message styling - base properties */
 .message-line {
     display: block;
     padding: 2px 4px;
@@ -243,35 +244,97 @@ pre#messagesDisplay {
     overflow-x: auto;
     border-radius: 3px;
 }
-.message-sent-legend {
-    background-color: #a0e0fd;
-    color: #000000;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-size: 0.85em;
-}
-.message-received-legend {
-    background-color: #a4fca3;
-    color: #000000;
+
+/* Legend styling - base properties */
+.message-sent-legend, .message-received-legend, .message-system-legend {
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 0.85em;
 }
 
-.message-sent {
+/* Sent message styling (both for messages and legend) */
+.message-sent, .message-sent_text, .message-sent-legend {
     background-color: #a0e0fd;
     color: #000000;
 }
-.message-received {
+
+/* Received message styling (both for messages and legend) */
+.message-received, .message-received-legend {
     background-color: #a4fca3;
     color: #000000;
 }
-.message-system {
-    background-color: #f0f0f0;
+
+/* System message styling (both for messages and legend) */
+.message-system, .message-system-legend {
+    background-color: #ffe5bd;
     color: #555555;
     font-style: italic;
 }
 
 #sortMessagesButton {
-    margin-left: auto; /* Pushes the button to the right in a flex container */
+    margin-left: auto;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90%;
+    text-align: center;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-primary {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+.btn-secondary {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+.btn-cancel {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.json-toggle {
+    padding: 2px 8px;
+    font-size: 0.8em;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.json-toggle:hover {
+    background-color: #e0e0e0;
+}
+
+.json-toggle.expanded {
+    background-color: #e6f3ff;
+    border-color: #99ccff;
 }
