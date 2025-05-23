@@ -341,38 +341,26 @@ pre#messagesDisplay {
 }
 
 #sortMessagesButton {
-    padding: 5px 10px;
+    padding: 2px 5px;
     font-size: 0.8em;
-    margin-left: auto;
+    margin-left: auto; /* Pushes the sort button to the far right */
 }
 
 /* Removed old static modal styles: .modal, .modal-content, .modal-buttons, .btn-primary, .btn-secondary, .btn-cancel */
 
 .json-toggle {
-    padding: 5px 10px;
-    font-size: 0.8em;
+    padding: 3px 3px;
+    font-size: 0.7em;
     background-color: #e9ecef;
     color: #495057;
     border: 1px solid #ced4da;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 }
 
 .json-toggle:hover {
     background-color: #dee2e6;
     border-color: #adb5bd;
-}
-
-.json-toggle.expanded {
-    background-color: #007bff;
-    color: #ffffff;
-    border-color: #007bff;
-}
-
-.json-toggle.expanded:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
 }
 
 /* Special styling for the Save Command button */
@@ -403,4 +391,165 @@ pre#messagesDisplay {
 
 #resizeHandle:hover {
     background-color: #adb5bd; /* Darker gray on hover */
+}
+
+/* Palette Management Controls */
+.palette-controls-container {
+    background-color: #f9f9f9;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+}
+
+.palette-controls-container h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.palette-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.palette-label {
+    font-weight: bold;
+    min-width: 100px; /* Align labels */
+}
+
+.palette-select {
+    flex-grow: 1;
+    padding: 5px;
+}
+
+.palette-input {
+    flex-grow: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.palette-file-input {
+    flex-grow: 1;
+}
+
+.palette-button {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    background-color: #efefef;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.palette-button:hover {
+    background-color: #e0e0e0;
+}
+
+.palette-button.action-button {
+    background-color: #4CAF50; /* Green */
+    color: white;
+    border-color: #4CAF50;
+}
+
+.palette-button.action-button:hover {
+    background-color: #45a049;
+}
+
+.palette-button.danger-button {
+    background-color: #f44336; /* Red */
+    color: white;
+    border-color: #f44336;
+}
+
+.palette-button.danger-button:hover {
+    background-color: #da190b;
+}
+
+/* End Palette Management Controls */
+
+/* Styles for Palette Icon Buttons */
+#createPaletteButton, 
+#savePaletteButton, 
+#editPaletteButton, 
+#uploadCommandFileButton {
+    font-size: 1.1em; /* Adjust icon size */
+    padding: 6px 10px; /* Adjust padding for a more compact look */
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333; /* Darker icon color for contrast */
+    border: 1px solid #ccc; /* Add a border */
+    line-height: 1.2; /* Ensure icon is vertically centered if it behaves like text */
+}
+
+#deletePaletteButton {
+    font-size: 1.1em;
+    padding: 6px 10px;
+    background-color: #f0f0f0; /* Light gray background */
+    color: #d9534f; /* Red icon color for danger indication */
+    border: 1px solid #ccc;
+    line-height: 1.2;
+}
+
+/* Hover states for new icon buttons */
+#createPaletteButton:hover,
+#savePaletteButton:hover,
+#editPaletteButton:hover,
+#uploadCommandFileButton:hover,
+#deletePaletteButton:hover {
+    background-color: #e0e0e0; /* Slightly darker gray on hover */
+    border-color: #bbb;
+}
+
+/* Styles for Palette Subheading - REMOVED as subheading is now simpler */
+/*
+#paletteControlsSubheading .subheading-status {
+    font-weight: normal;
+    color: #555; 
+}
+
+#paletteControlsSubheading .subheading-palette-name {
+    font-weight: bold; 
+    color: #007bff; 
+}
+*/
+
+/* Modal Basic Styling */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 700px; /* Maximum width */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
 }
