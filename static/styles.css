@@ -1,46 +1,65 @@
 body {
-    font-family: sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     display: flex;
     flex-direction: column;
 }
 .tab-container {
     display: flex;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     overflow-x: auto;
     white-space: nowrap;
+    border-bottom: 1px solid #dee2e6;
 }
 .tab { 
     padding: 10px 15px; 
     cursor: pointer; 
-    border: 1px solid #ccc; 
+    border: 1px solid transparent;
     border-bottom: none; 
-    margin-right: 5px; 
-    background-color: #d5e2ff;
+    margin-right: 2px; 
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out;
 }
-.tab.active { background-color: #89afff; }
+
+.tab:hover {
+    background-color: #e9ecef;
+    border-color: #e9ecef #e9ecef transparent;
+    color: #007bff;
+}
+
+.tab.active {
+    background-color: #e7f3ff; /* Subtle blue background */
+    color: #0056b3; /* Slightly darker blue for text for better contrast on light blue */
+    border-color: #dee2e6 #dee2e6 #e7f3ff; /* Adjust border to match new background */
+    border-bottom: 1px solid #e7f3ff; /* Make bottom border consistent */
+    margin-bottom: -1px;
+    font-weight: 600;
+}
 
 /* General Button Styling */
 button, input[type="button"], input[type="submit"] {
     padding: 8px 15px;
-    background-color: #d5e2ff;
-    color: rgb(0, 0, 0);
-    border: 1px solid #000000;
-    border-radius: 4px;
-    font-weight: bold;
+    background-color: #007bff; /* Modern primary blue */
+    color: #ffffff; /* White text for better contrast */
+    border: none; /* Remove border for a flatter look */
+    border-radius: 5px; /* Slightly more rounded corners */
     cursor: pointer;
     font-size: 0.9em;
-    font-weight: normal;
-    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    font-weight: 500; /* Medium font weight */
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    text-align: center;
 }
 
 button:hover, input[type="button"]:hover, input[type="submit"]:hover {
-    background-color: #93b7ff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #0056b3; /* Darker shade on hover */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15); /* Subtle shadow on hover */
 }
 
 button:active, input[type="button"]:active, input[type="submit"]:active {
-    background-color: #e4e4e4;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    background-color: #004085; /* Even darker shade on active */
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); /* Inner shadow on active */
 }
 
 /* Input Text Styling */
@@ -66,11 +85,12 @@ input[type="text"]:focus {
 }
 
 #tabContentContainer {
-    flex: 1; 
+    width: 30%;
     border-right: 1px solid #ccc; 
     padding-right: 10px; 
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 .tab-content { 
@@ -87,11 +107,12 @@ input[type="text"]:focus {
 .command-list li:hover { background-color: #f9f9f9; }
 
 #formAndResponseArea {
-    flex: 1.5; 
+    flex-grow: 1;
     padding-left: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 #jsonDisplayAreasContainer {
@@ -212,9 +233,8 @@ pre#filledJsonDisplay {
 }
 
 #header-controls button {
-    padding: 4px 8px;
+    padding: 5px 10px;
     font-size: 0.85em;
-    margin-left: 5px;
 }
 
 #connectionStatus {
@@ -302,28 +322,66 @@ pre#messagesDisplay {
 }
 
 #sortMessagesButton {
-    padding: 2px 5px; 
-    font-size: 0.8em; 
+    padding: 5px 10px;
+    font-size: 0.8em;
     margin-left: auto;
 }
 
 /* Removed old static modal styles: .modal, .modal-content, .modal-buttons, .btn-primary, .btn-secondary, .btn-cancel */
 
 .json-toggle {
-    padding: 3px 8px;
+    padding: 5px 10px;
     font-size: 0.8em;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 }
 
 .json-toggle:hover {
-    background-color: #e0e0e0;
+    background-color: #dee2e6;
+    border-color: #adb5bd;
 }
 
 .json-toggle.expanded {
-    background-color: #e6f3ff;
-    border-color: #99ccff;
+    background-color: #007bff;
+    color: #ffffff;
+    border-color: #007bff;
+}
+
+.json-toggle.expanded:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+/* Special styling for the Save Command button */
+.btn-save {
+    background-color: #28a745; /* Green for save/success */
+    color: #ffffff;
+}
+
+.btn-save:hover {
+    background-color: #218838; /* Darker green on hover */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.btn-save:active {
+    background-color: #1e7e34; /* Even darker green on active */
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#resizeHandle {
+    width: 8px; /* Slightly wider for easier grabbing */
+    cursor: col-resize;
+    background-color: #dee2e6; /* Light gray */
+    flex-shrink: 0; /* Prevent the handle from shrinking */
+    transition: background-color 0.15s ease-in-out;
+    /* Position it between the two flex children */
+    align-self: stretch; /* Make it full height of the container */
+}
+
+#resizeHandle:hover {
+    background-color: #adb5bd; /* Darker gray on hover */
 }

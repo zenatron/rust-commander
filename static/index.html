@@ -46,6 +46,8 @@
         <!-- Tab content (command lists) will be inserted here by JS -->
       </div>
 
+      <div id="resizeHandle" style="width: 5px; cursor: col-resize; background-color: #ccc; flex-shrink: 0;"></div>
+
       <div id="formAndResponseArea">
         <div id="jsonDisplayAreasContainer">
           <div>
@@ -70,16 +72,16 @@
         
         <div id="mainActionButtons" style="margin-top: 10px; display: flex; gap: 10px;">
           <button type="button" id="sendButton" title="Send command to connected device" style="padding: 8px 15px;">Send</button>
-          <button type="button" id="saveCommandButton_main" title="Save the current filled command" style="padding: 8px 15px;">Save Command</button>
+          <button type="button" id="saveCommandButton_main" class="btn-save" title="Save the current filled command" style="padding: 8px 15px;">Save Command</button>
         </div>
 
-        <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
+        <!-- <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
           <label for="rawTextInput" style="font-weight: bold;">Raw Text Command:</label>
           <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
             <input type="text" id="rawTextInput" placeholder="Enter raw text command" style="flex-grow: 1; padding: 5px; border: 1px solid #ccc;">
             <button type="button" id="sendRawTextButton" title="Send command to connected device">Send Text</button>
           </div>
-        </div>
+        </div> -->
 
         <div id="messagesContainer">
           <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
@@ -95,7 +97,6 @@
         </div>
       </div>
     </div>
-
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

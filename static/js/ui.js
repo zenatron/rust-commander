@@ -10,6 +10,7 @@ export class UIManager {
     
     // Initialize toggle buttons
     // We'll initialize toggles after setting commandManager
+    this.initializeResizeHandle();
   }
 
   // Set command manager reference
@@ -325,6 +326,72 @@ export class UIManager {
   clearMessages() {
     this.messageHistory = [];
     this.updateMessagesDisplay();
+  }
+
+  initializeResizeHandle() {
+    const resizeHandle = document.getElementById('resizeHandle');
+    const commandPaletteContainer = document.getElementById('tabContentContainer');
+    // No need for formAndResponseArea directly in this simplified version
+
+    if (!resizeHandle || !commandPaletteContainer) {
+      console.warn('Resize handle or command palette container not found for resizing.');
+      return;
+    }
+
+    let isResizing = false;
+    let startX;
+    let startWidth;
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // Prevent text selection and other default actions
+      isResizing = true;
+      startX = e.clientX;
+      startWidth = commandPaletteContainer.offsetWidth;
+      
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    });
+
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      e.preventDefault();
+
+      const deltaX = e.clientX - startX;
+      let newWidth = startWidth + deltaX;
+
+      // Define min and max widths (e.g., in pixels)
+      const minWidth = 200; // Minimum width for the command palette
+      const parentWidth = commandPaletteContainer.parentElement.offsetWidth;
+      const resizeHandleWidth = resizeHandle.offsetWidth;
+      // Max width should leave some space for the resize handle and a bit for the other panel
+      const maxWidth = parentWidth - resizeHandleWidth - 50; 
+
+      if (newWidth < minWidth) {
+        newWidth = minWidth;
+      } else if (newWidth > maxWidth) {
+        newWidth = maxWidth;
+      }
+      
+      commandPaletteContainer.style.width = `${newWidth}px`;
+    };
+
+    const handleMouseUp = (e) => {
+      if (!isResizing) return;
+      e.preventDefault();
+
+      isResizing = false;
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = '';
+
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      // The width is now directly set on commandPaletteContainer.style.width
+      // and should persist until the next resize operation or page reload.
+    };
   }
 
   initializeJsonToggles() {
