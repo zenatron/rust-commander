@@ -68,16 +68,10 @@
           <!-- Dynamic input fields will go here -->
         </div>
         
-        <div id="saveCommandContainer" style="margin-bottom: 10px; padding: 8px; border: 1px solid #e0e0e0; background-color: #f9f9f9;">
-          <label for="saveCommandName" style="font-weight: bold; display: block; margin-bottom: 5px;">Save Current Command:</label>
-          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
-            <input type="text" id="saveCommandName" placeholder="Command name" style="flex: 1; padding: 4px;">
-            <button type="button" id="saveCommandButton" title="Save the current filled command">Save As...</button>
-          </div>
-          <small style="color: #666;">Tip: Choose where to save your command using the file dialog.</small>
+        <div id="mainActionButtons" style="margin-top: 10px; display: flex; gap: 10px;">
+          <button type="button" id="sendButton" title="Send command to connected device" style="padding: 8px 15px;">Send</button>
+          <button type="button" id="saveCommandButton_main" title="Save the current filled command" style="padding: 8px 15px;">Save Command</button>
         </div>
-        
-        <button type="button" id="sendButton" title="Send command to connected device" style="max-width: 100px;">Send</button>
 
         <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
           <label for="rawTextInput" style="font-weight: bold;">Raw Text Command:</label>
@@ -98,19 +92,6 @@
             <button type="button" id="sortMessagesButton" title="Sort messages (newest first)" style="padding: 2px 5px; font-size: 0.8em; margin-left: auto;">Sort Newest First</button>
           </div>
           <pre id="messagesDisplay"></pre>
-        </div>
-      </div>
-    </div>
-
-    <!-- Save Modal -->
-    <div id="save-modal" class="modal" style="display: none;">
-      <div class="modal-content">
-        <h3>Save Command</h3>
-        <p>Choose how you want to save your command:</p>
-        <div class="modal-buttons">
-          <button id="create-new-file" class="btn-primary">Create New File</button>
-          <button id="add-to-existing" class="btn-secondary">Add to Existing File</button>
-          <button id="cancel-save" class="btn-cancel">Cancel</button>
         </div>
       </div>
     </div>

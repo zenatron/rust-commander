@@ -103,8 +103,8 @@ class App {
       }
     });
 
-    // Save Command (original save button)
-    document.getElementById("saveCommandButton").addEventListener("click", () => {
+    // Save Command (main button next to Send)
+    document.getElementById("saveCommandButton_main").addEventListener("click", () => {
       if (!this.validateVariableInputs()) return;
       this.saveManager.showSaveModal();
     });
@@ -184,4 +184,35 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Make app globally available for command selection callbacks
   window.commanderApp = app;
-}); 
+
+  // Fetch and display project version
+  fetchAndDisplayVersion();
+});
+
+// Function to fetch and display project version
+async function fetchAndDisplayVersion() {
+  try {
+    const response = await fetch('/api/version');
+    if (!response.ok) {
+      console.error('Failed to fetch version:', response.status, response.statusText);
+      const versionElem = document.getElementById('projectVersion');
+      if (versionElem) {
+        versionElem.textContent = 'Version: N/A';
+      }
+      return;
+    }
+    const version = await response.text();
+    const versionElem = document.getElementById('projectVersion');
+    if (versionElem) {
+      versionElem.textContent = `Version: ${version}`;
+    } else {
+      console.warn('projectVersion element not found in the DOM.');
+    }
+  } catch (error) {
+    console.error('Error fetching or displaying version:', error);
+    const versionElem = document.getElementById('projectVersion');
+    if (versionElem) {
+      versionElem.textContent = 'Version: Error';
+    }
+  }
+} 
