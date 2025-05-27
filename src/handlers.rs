@@ -196,13 +196,30 @@ pub async fn send_command(
     let mut tcp_stream_guard = app_state.tcp_stream.lock().unwrap();
 
     if let Some(stream) = tcp_stream_guard.as_mut() {
-        let command_bytes = match serde_json::to_vec(&cmd_payload.json_command) {
+        let mut command_bytes = match serde_json::to_vec(&cmd_payload.json_command) {
             Ok(bytes) => bytes,
             Err(e) => {
                 return HttpResponse::InternalServerError()
                     .body(format!("Failed to serialize command: {}", e));
             }
         };
+
+        // Append delimiter if provided
+        if let Some(delimiter_str) = &cmd_payload.delimiter {
+            if !delimiter_str.is_empty() {
+                let unescaped_delimiter_bytes = unescape_string_to_bytes(delimiter_str);
+                command_bytes.extend_from_slice(&unescaped_delimiter_bytes);
+                println!(
+                    "Appending custom delimiter: input=\"{}\", bytes={:?}",
+                    delimiter_str,
+                    unescaped_delimiter_bytes
+                );
+            }
+        }
+
+        // Log the exact bytes being sent
+        println!("Attempting to send to TCP ({} bytes): {:?}", command_bytes.len(), command_bytes);
+        println!("Attempting to send to TCP (as string lossy): {}", String::from_utf8_lossy(&command_bytes));
 
         if let Err(e) = stream.write_all(&command_bytes).await {
             return HttpResponse::InternalServerError().body(format!("TCP write error: {}", e));
@@ -226,7 +243,23 @@ pub async fn send_text_command_route(
     if let Some(stream) = tcp_stream_guard.as_mut() {
         let command_to_send = payload.text_command.clone();
         let mut command_bytes = payload.text_command.as_bytes().to_vec();
-        command_bytes.push(b'\r'); // Append carriage return
+
+        // Append delimiter if provided
+        if let Some(delimiter_str) = &payload.delimiter {
+            if !delimiter_str.is_empty() {
+                // For now, treat delimiter_str as a literal sequence of characters.
+                // We might need to add unescaping logic later (e.g., "\r" -> actual CR byte)
+                command_bytes.extend_from_slice(delimiter_str.as_bytes());
+                println!("Appending custom delimiter: \"{}\"", delimiter_str);
+            } else {
+                // If delimiter is present but an empty string, append nothing.
+                println!("Custom delimiter is empty, sending command as-is.");
+            }
+        } else {
+            // If delimiter is None (not provided in payload), append nothing by default.
+            // Previous behavior was to always append '\r'.
+            println!("No custom delimiter provided, sending command as-is.");
+        }
 
         println!("Sending raw text command: {}", command_to_send);
 
@@ -270,7 +303,7 @@ pub async fn embedded_file_handler(req: HttpRequest) -> impl Responder {
         Some(content) => {
             let body = actix_web::body::BoxBody::new(content.data.into_owned());
             let mime = mime_guess::from_path(file).first_or_octet_stream();
-            println!("Serving file: {} with MIME type: {}", file, mime);
+            //println!("Serving file: {} with MIME type: {}", file, mime);
             HttpResponse::Ok()
                 .content_type(mime.as_ref())
                 .body(body)
@@ -583,4 +616,32 @@ pub async fn add_command_to_palette(
             HttpResponse::InternalServerError().body(format!("Failed to save palette: {}", e))
         }
     }
+}
+
+// Helper function to unescape a string into a byte vector
+// Translates common escape sequences like \r, \n, \t, \0, \\
+// Other characters are passed through as their UTF-8 bytes.
+fn unescape_string_to_bytes(s: &str) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('r') => bytes.push(b'\r'),
+                Some('n') => bytes.push(b'\n'),
+                Some('t') => bytes.push(b'\t'),
+                Some('0') => bytes.push(b'\0'),
+                Some('\\') => bytes.push(b'\\'),
+                Some(other) => {
+                    // Not a recognized escape sequence, push backslash and the char
+                    bytes.push(b'\\');
+                    bytes.extend(other.to_string().as_bytes());
+                }
+                None => bytes.push(b'\\'), // Trailing backslash
+            }
+        } else {
+            bytes.extend(c.to_string().as_bytes());
+        }
+    }
+    bytes
 } 

@@ -437,10 +437,13 @@ class App {
       if (!this.validateAndSendCommand()) return;
 
       const command = this.commandManager.getCurrentFilledCommand();
-      const result = await this.connectionManager.sendCommand(command);
+      const delimiterInput = document.getElementById("commandDelimiterInput");
+      const delimiter = delimiterInput ? delimiterInput.value : null; // Get delimiter, or null if input not found
+
+      const result = await this.connectionManager.sendCommand(command, delimiter);
       
       if (result.success) {
-        this.uiManager.addMessage(JSON.stringify(command), "sent");
+        this.uiManager.addMessage(JSON.stringify(command) + (delimiter ? ` (delim: '${delimiter}')` : ''), "sent");
       } else {
         // Apply error styling to the response div
         this.uiManager.showResponse(`Send error: ${result.message}`, false, "system_error");
@@ -452,44 +455,6 @@ class App {
       if (!this.validateVariableInputs()) return;
       this.saveManager.showSaveModal();
     });
-
-    // Raw Text Command (original elements)
-    const sendRawTextButtonElement = document.getElementById("sendRawTextButton");
-    if (sendRawTextButtonElement) {
-      sendRawTextButtonElement.addEventListener("click", async () => {
-        const textCommand = document.getElementById("rawTextInput").value.trim();
-        if (!textCommand) {
-          this.uiManager.showResponse('Please enter a text command', true, "system_warn");
-          return;
-        }
-
-        const result = await this.connectionManager.sendTextCommand(textCommand);
-        
-        if (result.success) {
-          this.uiManager.addMessage(textCommand, "sent_text");
-          // Ensure rawTextInput exists before trying to clear it
-          const rawTextInputElement = document.getElementById("rawTextInput");
-          if (rawTextInputElement) rawTextInputElement.value = ""; 
-        } else {
-          this.uiManager.showResponse(`Send error: ${result.message}`, false, "system_error");
-        }
-      });
-    } else {
-      console.warn('[main.js] sendRawTextButton element not found, skipping listener attachment.');
-    }
-
-    // Enter key for text command
-    const rawTextInputElement = document.getElementById("rawTextInput");
-    if (rawTextInputElement) {
-      rawTextInputElement.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          // Ensure sendRawTextButtonElement exists before trying to click it
-          if (sendRawTextButtonElement) sendRawTextButtonElement.click(); 
-        }
-      });
-    } else {
-      console.warn('[main.js] rawTextInput element not found, skipping keydown listener attachment.');
-    }
 
     // Sort Messages (original button)
     const sortButton = document.getElementById("sortMessagesButton");

@@ -146,12 +146,15 @@ export class ConnectionManager {
   }
 
   // Send JSON command
-  async sendCommand(command) {
+  async sendCommand(command, delimiter) {
     try {
       const response = await fetch("/send-command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ json_command: command }),
+        body: JSON.stringify({ 
+          json_command: command,
+          delimiter: delimiter
+        }),
       });
       
       const text = await response.text();
@@ -175,12 +178,15 @@ export class ConnectionManager {
   }
 
   // Send raw text command
-  async sendTextCommand(textCommand) {
+  async sendTextCommand(textCommand, delimiter) {
     try {
       const response = await fetch("/send-text-command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text_command: textCommand }),
+        body: JSON.stringify({ 
+          text_command: textCommand,
+          delimiter: delimiter
+        }),
       });
       
       const text = await response.text();

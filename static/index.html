@@ -85,18 +85,11 @@
           <!-- Dynamic input fields will go here -->
         </div>
         
-        <div id="mainActionButtons" style="margin-top: 10px; display: flex; gap: 10px;">
+        <div id="mainActionButtons" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+          <input type="text" id="commandDelimiterInput" placeholder="Delimiter (e.g., \r, \n)" style="width: 150px; padding: 5px; border: 1px solid #ccc; margin-right: 5px;">
           <button type="button" id="sendButton" title="Send command to connected device" style="padding: 8px 15px;">Send</button>
           <button type="button" id="saveCommandButton_main" class="btn-save" title="Save the current filled command" style="padding: 8px 15px;">Save Command</button>
         </div>
-
-        <!-- <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
-          <label for="rawTextInput" style="font-weight: bold;">Raw Text Command:</label>
-          <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-            <input type="text" id="rawTextInput" placeholder="Enter raw text command" style="flex-grow: 1; padding: 5px; border: 1px solid #ccc;">
-            <button type="button" id="sendRawTextButton" title="Send command to connected device">Send Text</button>
-          </div>
-        </div> -->
 
         <div id="messagesContainer">
           <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
@@ -106,7 +99,7 @@
             <span class="message-system_info-legend"> (info)</span>
             <span class="message-system_warn-legend"> (warning)</span>
             <span class="message-system_error-legend"> (error)</span>
-            <button type="button" id="sortMessagesButton" title="Sort messages (newest first)" style="padding: 2px 5px; font-size: 0.8em; margin-left: auto;">Sort Newest First</button>
+            <button type="button" id="sortMessagesButton" title="Sort messages" style="padding: 2px 5px; font-size: 0.8em; margin-left: auto;">Sort Newest First</button>
           </div>
           <pre id="messagesDisplay"></pre>
         </div>

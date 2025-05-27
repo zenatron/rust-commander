@@ -12,6 +12,7 @@ pub struct ClientTextMessage(pub String);
 #[derive(Deserialize, Serialize)]
 pub struct CommandPayload {
     pub json_command: JsonValue,
+    pub delimiter: Option<String>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -22,6 +23,7 @@ pub struct ConnectPayload {
 #[derive(Deserialize, Serialize)]
 pub struct TextCommandPayload {
     pub text_command: String,
+    pub delimiter: Option<String>,
 }
 
 // New structs for palettes and commands
