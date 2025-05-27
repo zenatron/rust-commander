@@ -4,8 +4,9 @@ use tokio::net::TcpStream;
 use tokio::io::{AsyncWriteExt, AsyncReadExt, BufReader};
 use rust_embed::RustEmbed;
 use mime_guess;
+use indexmap;
 
-use crate::types::{CommandPayload, ConnectPayload, TextCommandPayload, PalettePayload, Palette};
+use crate::types::{CommandPayload, ConnectPayload, TextCommandPayload, PalettePayload, Palette, AddCommandPayload};
 use crate::state::AppState;
 use crate::palette_manager::{save_palette, load_palette, list_palettes as list_palettes_fs, delete_palette as delete_palette_fs, import_palette as import_palette_fs};
 
@@ -89,7 +90,6 @@ pub async fn connect_route(
                                 // We need to read more data from the socket.
                                 // current_read_offset is not advanced here, as the data from this point is partial.
                                 // The buffer compaction logic later will preserve this partial data.
-                                // println!("Incomplete JSON in buffer, waiting for more data...");
                                 break; // Break inner loop to read more data.
                             }
                             Some(Err(e)) => {
@@ -104,8 +104,6 @@ pub async fn connect_route(
                                 // We must advance past the problematic data to avoid an infinite loop.
                                 // Advance by the offset where the error occurred in the slice + 1 to skip the char causing it.
                                 current_read_offset += error_offset_in_slice + 1;
-                                // Do NOT broadcast this error to the client.
-                                // Do NOT terminate the reader task here; try to recover.
                             }
                             None => {
                                 // The deserializer's iterator is exhausted for the current slice.
@@ -249,6 +247,15 @@ pub async fn send_text_command_route(
 #[get("/api/version")]
 pub async fn version_route() -> impl Responder {
     env!("CARGO_PKG_VERSION")
+}
+
+#[get("/api/health")]
+pub async fn health_check() -> impl Responder {
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": "ok",
+        "timestamp": chrono::Utc::now().timestamp(),
+        "message": "Server is running"
+    }))
 }
 
 #[derive(RustEmbed)]
@@ -445,7 +452,7 @@ pub async fn import_palette_handler(mut payload: Multipart) -> impl Responder {
                     return HttpResponse::InternalServerError().body(format!("Failed to write to temp file: {}", e));
                 }
             }
-            break; // Assuming one file upload for now
+            break;
         }
     }
 
@@ -486,6 +493,94 @@ pub async fn export_palette_handler(name: web::Path<String>) -> impl Responder {
             } else {
                 HttpResponse::InternalServerError().body(format!("Error exporting palette '{}': {}", palette_name, e))
             }
+        }
+    }
+}
+
+#[post("/api/palettes/{name}/commands")]
+pub async fn add_command_to_palette(
+    path: web::Path<String>,
+    command_payload: web::Json<AddCommandPayload>,
+    app_state: web::Data<AppState>,
+) -> impl Responder {
+    let palette_name = path.into_inner();
+    let command_data = command_payload.into_inner();
+    let command_value_to_insert = command_data.command_data.clone();
+
+    // Check if command name is empty
+    if command_data.command_name.trim().is_empty() {
+        return HttpResponse::BadRequest().body("Command name cannot be empty.");
+    }
+
+    let mut palette: Palette;
+    { // Scope for initial lock to get palette data
+        let app_palettes_lock_guard = app_state.palettes.lock().unwrap();
+        if let Some(palette_in_memory) = app_palettes_lock_guard.get(&palette_name) {
+            palette = palette_in_memory.clone();
+            // Lock `app_palettes_lock_guard` is dropped here as it goes out of scope.
+        } else {
+            drop(app_palettes_lock_guard); // Explicitly drop before disk I/O
+            match load_palette(&palette_name) {
+                Ok(palette_from_disk) => {
+                    // Clone palette_from_disk before inserting into cache,
+                    // as palette_from_disk will be moved into the cache.
+                    palette = palette_from_disk.clone(); 
+                    // Update cache with the loaded palette
+                    let mut cache_update_lock_guard = app_state.palettes.lock().unwrap();
+                    cache_update_lock_guard.insert(palette_name.clone(), palette_from_disk);
+                    // cache_update_lock_guard drops here
+                }
+                Err(_) => {
+                    return HttpResponse::NotFound().body(format!("Palette '{}' not found.", palette_name));
+                }
+            }
+        }
+    } // Initial lock `app_palettes_lock_guard` is guaranteed to be released here.
+
+    // `palette` is now populated and no locks on `app_state.palettes` are held.
+    // Now, modify `palette` as before.
+
+    // Ensure "Saved Commands" category exists
+    if !palette.commands.contains_key("Saved Commands") {
+        palette.commands.insert("Saved Commands".to_string(), indexmap::IndexMap::new());
+    }
+
+    // Check if command already exists in "Saved Commands" category
+    // This check is on the local `palette` clone.
+    if let Some(saved_commands) = palette.commands.get("Saved Commands") {
+        if saved_commands.contains_key(&command_data.command_name) {
+            return HttpResponse::Conflict().json(serde_json::json!({
+                "error": "Command already exists",
+                "message": format!("Command '{}' already exists in palette '{}'", command_data.command_name, palette_name)
+            }));
+        }
+    }
+
+    // Add the command to the "Saved Commands" category in the local `palette` clone.
+    // Use the `command_value_to_insert` (the clone made at the beginning).
+    if let Some(saved_commands) = palette.commands.get_mut("Saved Commands") {
+        saved_commands.insert(command_data.command_name.clone(), command_value_to_insert);
+    } else {
+        eprintln!("Critical error: 'Saved Commands' category existed but could not get mut ref, or was unexpectedly removed.");
+        return HttpResponse::InternalServerError().body("Failed to access 'Saved Commands' category internally for command insertion.");
+    }
+
+    // Save the updated palette to disk. No locks on app_state.palettes are held here.
+    match save_palette(&palette) {
+        Ok(_) => {
+            // Update in-memory cache with the successfully saved version.
+            let mut final_cache_lock = app_state.palettes.lock().unwrap();
+            final_cache_lock.insert(palette_name.clone(), palette.clone());
+            // final_cache_lock drops here.
+            
+            HttpResponse::Ok().json(serde_json::json!({
+                "message": format!("Command '{}' added to palette '{}' successfully", command_data.command_name, palette_name),
+                "palette": palette
+            }))
+        }
+        Err(e) => {
+            eprintln!("Failed to save palette '{}' after command add: {}", palette_name, e);
+            HttpResponse::InternalServerError().body(format!("Failed to save palette: {}", e))
         }
     }
 } 

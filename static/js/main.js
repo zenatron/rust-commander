@@ -93,14 +93,13 @@ class App {
   }
 
   async saveCurrentPalette() {
-    const currentPaletteName = this.uiManager.getCurrentPaletteName(); // Needs to be implemented in UIManager
+    const currentPaletteName = this.uiManager.getCurrentPaletteName();
     if (!currentPaletteName) {
       this.uiManager.showResponse("No palette selected to save or new palette name not provided.", true, "system_warn");
-      // Optionally, prompt for a new name if none is selected, or handle via a dedicated "Save As"
       return;
     }
 
-    const commandsToSave = this.commandManager.getAllCommands(); // Needs to be implemented in CommandManager
+    const commandsToSave = this.commandManager.getAllCommands();
     if (Object.keys(commandsToSave).length === 0) {
         this.uiManager.showResponse("No commands to save in the current palette.", true, "system_warn");
         return;
@@ -134,10 +133,8 @@ class App {
         this.uiManager.showResponse("Palette name cannot be empty.", true, "system_warn");
         return;
     }
-    // Check if palette already exists (optional, backend might handle this)
-    // For now, assume backend handles creation or overwrite logic
 
-    const emptyPaletteData = {}; // New palette starts empty
+    const emptyPaletteData = {};
 
     try {
         const response = await fetch('/api/palettes', {
@@ -152,9 +149,9 @@ class App {
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
         }
         this.uiManager.showResponse(`Palette '${paletteName}' created successfully.`, true, "system_info");
-        await this.fetchPalettes(); // Refresh palette list
-        this.uiManager.setSelectedPalette(paletteName); // Select the new palette
-        await this.loadPalette(paletteName); // Load the (empty) new palette
+        await this.fetchPalettes();
+        this.uiManager.setSelectedPalette(paletteName);
+        await this.loadPalette(paletteName);
     } catch (error) {
         console.error(`Error creating palette ${paletteName}:`, error);
         this.uiManager.showResponse(`Error creating palette '${paletteName}': ${error.message}`, true, "system_error");
@@ -178,14 +175,12 @@ class App {
       }
       this.uiManager.showResponse(`Palette '${paletteName}' deleted successfully.`, true, "system_info");
       await this.fetchPalettes(); // Refresh the list
-      // Potentially load another palette or clear view if the active one was deleted
       const currentSelectedPalette = this.uiManager.getCurrentPaletteName();
       if (currentSelectedPalette === paletteName || !currentSelectedPalette) {
           this.commandManager.clearAllCommands();
           this.uiManager.clearCommandPalette();
           this.uiManager.updateLoadedPaletteName(""); 
-          // Try to load the first available palette, if any
-          const palettes = this.uiManager.getPaletteList(); // Needs UIManager.getPaletteList()
+          const palettes = this.uiManager.getPaletteList();
           if (palettes.length > 0) {
               await this.loadPalette(palettes[0]);
           }
@@ -262,12 +257,7 @@ class App {
       this.uiManager.showResponse(result.message, false, messageType);
     });
 
-    // Load Commands File (original upload button) - This might be re-purposed or removed if palettes are primary
     document.getElementById("uploadCommandFileButton").addEventListener("click", () => {
-      // This button might now be used to "import commands into current palette" or "create new palette from file"
-      // For now, let's assume it triggers a file upload that can be handled by a new function.
-      // Or, it could be removed if palette management is purely through the new UI.
-      // Let's change its behavior to "Create new palette from file"
       document.getElementById("paletteFileUpload").click();
     });
     
@@ -288,7 +278,6 @@ class App {
             reader.onload = async (event) => {
                 try {
                     const commandsData = JSON.parse(event.target.result);
-                    // Now save this as a new palette
                     const response = await fetch('/api/palettes', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -299,7 +288,7 @@ class App {
                         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
                     }
                     this.uiManager.showResponse(`Palette '${paletteName}' created from file '${file.name}' and loaded.`, true, "system_info");
-                    await this.fetchPalettes(); // Refresh palette list
+                    await this.fetchPalettes();
                     this.uiManager.setSelectedPalette(paletteName);
                     await this.loadPalette(paletteName);
                 } catch (jsonError) {

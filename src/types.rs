@@ -45,4 +45,11 @@ pub struct Palette {
 pub struct PalettePayload {
     pub name: String,
     pub commands: CommandsMap,
+}
+
+// Payload for adding a command to an existing palette
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AddCommandPayload {
+    pub command_name: String,
+    pub command_data: JsonValue,
 } 

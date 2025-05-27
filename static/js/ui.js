@@ -500,11 +500,6 @@ export class UIManager {
 
   // Get the name of the currently selected/loaded palette
   getCurrentPaletteName() {
-    // This could come from the selector's current value or the stored loadedPaletteName
-    // Using loadedPaletteName is safer if the selector might have a "Select a Palette" type option.
-    // However, for saving, we might want the name from the selector if the user is trying to save to a *newly typed* name (future enhancement)
-    // For now, let's use the stored name, which is updated upon successful load.
-    // If a new palette is created and named, that name should be set as loadedPaletteName.
     const selector = document.getElementById("paletteSelector");
     if (selector && selector.value) {
         return selector.value;
