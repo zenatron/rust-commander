@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <title>JSON Command Sender</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   </head>
   <body>
     <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0; margin-bottom: 10px;">
@@ -12,7 +14,6 @@
           <p id="projectVersion" style="font-size: 0.75em; color: #888; margin: 0; line-height: 1;">v0.1.0</p>
         </div>
         <input type="file" id="commandFileUpload" accept=".json" style="display: none;" />
-        <button type="button" id="uploadCommandFileButton" title="Upload custom command palette (JSON)" style="margin-top: 5px;">Load Palette</button>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end;">
         <div id="header-controls">
@@ -37,6 +38,20 @@
       </div>
     </div>
 
+    <div id="palette-controls-container" class="palette-controls" style="display: flex; align-items: center; gap: 10px;">
+      <label for="paletteSelector" style="white-space: nowrap; font-weight: bold;">Palette Selection:</label>
+      <select id="paletteSelector" style="max-width: 250px; flex-shrink: 0;"></select>
+
+      <span id="paletteOptionsLabelText" style="margin-left: 15px; white-space: nowrap; font-weight: bold;">Palette Options:</span>
+      
+      <button type="button" id="createPaletteButton" title="Create New Palette">➕</button>
+      <button type="button" id="uploadCommandFileButton" title="Import Palette from File">📥</button>
+      <input type="file" id="paletteFileUpload" accept=".json" style="display: none;" />
+      <button type="button" id="savePaletteButton" title="Save Current Palette" disabled>💾</button>
+      <button type="button" id="editPaletteButton" title="Edit Palette" disabled>✏️</button>
+      <button type="button" id="deletePaletteButton" class="danger-button" title="Delete Current Palette" disabled>🗑️</button>
+    </div>
+
     <div class="tab-container" id="tabContainer">
       <!-- Tabs will be inserted here -->
     </div>
@@ -53,14 +68,14 @@
           <div>
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
               <label for="rawJsonDisplay">Raw JSON (Template):</label>
-              <button type="button" id="rawJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">Compact</button>
+              <button type="button" id="rawJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
             </div>
             <pre id="rawJsonDisplay"></pre>
           </div>
           <div>
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
               <label for="filledJsonDisplay">Filled JSON (to Send):</label>
-              <button type="button" id="filledJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">Compact</button>
+              <button type="button" id="filledJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
             </div>
             <pre id="filledJsonDisplay"></pre>
           </div>
@@ -70,18 +85,11 @@
           <!-- Dynamic input fields will go here -->
         </div>
         
-        <div id="mainActionButtons" style="margin-top: 10px; display: flex; gap: 10px;">
+        <div id="mainActionButtons" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+          <input type="text" id="commandDelimiterInput" placeholder="Delimiter (e.g., \r, \n)" style="width: 150px; padding: 5px; border: 1px solid #ccc; margin-right: 5px;">
           <button type="button" id="sendButton" title="Send command to connected device" style="padding: 8px 15px;">Send</button>
           <button type="button" id="saveCommandButton_main" class="btn-save" title="Save the current filled command" style="padding: 8px 15px;">Save Command</button>
         </div>
-
-        <!-- <div id="rawTextCommandContainer" style="margin-top: 15px; margin-bottom: 10px;">
-          <label for="rawTextInput" style="font-weight: bold;">Raw Text Command:</label>
-          <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-            <input type="text" id="rawTextInput" placeholder="Enter raw text command" style="flex-grow: 1; padding: 5px; border: 1px solid #ccc;">
-            <button type="button" id="sendRawTextButton" title="Send command to connected device">Send Text</button>
-          </div>
-        </div> -->
 
         <div id="messagesContainer">
           <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
@@ -91,12 +99,25 @@
             <span class="message-system_info-legend"> (info)</span>
             <span class="message-system_warn-legend"> (warning)</span>
             <span class="message-system_error-legend"> (error)</span>
-            <button type="button" id="sortMessagesButton" title="Sort messages (newest first)" style="padding: 2px 5px; font-size: 0.8em; margin-left: auto;">Sort Newest First</button>
+            <button type="button" id="sortMessagesButton" title="Sort messages" style="padding: 2px 5px; font-size: 0.8em; margin-left: auto;">Sort Newest First</button>
           </div>
           <pre id="messagesDisplay"></pre>
         </div>
       </div>
     </div>
+
+    <div id="editPaletteModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" id="closeEditModal">&times;</span>
+        <h3>Edit Palette</h3>
+        <textarea id="paletteEditorTextarea" rows="20" style="width: 95%;"></textarea>
+        <div style="margin-top: 10px;">
+          <button type="button" id="savePaletteChangesButton">Save Changes</button>
+          <button type="button" id="cancelEditPaletteButton">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

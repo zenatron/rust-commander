@@ -29,6 +29,41 @@ export class CommandManager {
     }
   }
 
+  // New method: Load commands directly from a JSON object (used for palettes)
+  loadCommandsFromJson(jsonData) {
+    try {
+      // Validate if jsonData is an object (basic validation)
+      if (typeof jsonData !== 'object' || jsonData === null) {
+        throw new Error("Invalid JSON data provided. Must be an object.");
+      }
+      if (jsonData.hasOwnProperty('commands') && typeof jsonData.name === 'string') {
+        this.commandsData = jsonData.commands; // Store only the commands map
+      } else {
+        this.commandsData = jsonData; 
+      }
+      
+      this.clearCurrentCommand(); 
+      return { success: true, data: this.commandsData };
+    } catch (error) {
+      console.error("Error loading commands from JSON:", error);
+      this.commandsData = {};
+      this.clearCurrentCommand();
+      return { success: false, error: error.message };
+    }
+  } 
+  getAllCommands() {
+    return this.commandsData;
+  }
+  clearAllCommands() {
+    this.commandsData = {};
+    this.clearCurrentCommand();
+  }
+  clearCurrentCommand() {
+    this.currentCommandTemplate = null;
+    this.currentFilledCommand = null;
+    this.activeVariablePaths = [];
+  }
+
   // Set current command
   setCurrentCommand(commandJson) {
     this.currentCommandTemplate = JSON.parse(commandJson);

@@ -1,12 +1,22 @@
-use actix_web::{post, get, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{post, get, delete, web, HttpRequest, HttpResponse, Responder, put};
 use serde_json::{Value as JsonValue, Deserializer};
 use tokio::net::TcpStream;
 use tokio::io::{AsyncWriteExt, AsyncReadExt, BufReader};
 use rust_embed::RustEmbed;
 use mime_guess;
+use indexmap;
 
-use crate::types::{CommandPayload, ConnectPayload, TextCommandPayload};
+use crate::types::{CommandPayload, ConnectPayload, TextCommandPayload, PalettePayload, Palette, AddCommandPayload};
 use crate::state::AppState;
+use crate::palette_manager::{save_palette, load_palette, list_palettes as list_palettes_fs, delete_palette as delete_palette_fs, import_palette as import_palette_fs};
+
+// Needed for file uploads
+use actix_multipart::Multipart;
+use futures_util::TryStreamExt as _;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
+use uuid::Uuid; // For generating unique temp file names
 
 #[post("/connect")]
 pub async fn connect_route(
@@ -80,7 +90,6 @@ pub async fn connect_route(
                                 // We need to read more data from the socket.
                                 // current_read_offset is not advanced here, as the data from this point is partial.
                                 // The buffer compaction logic later will preserve this partial data.
-                                // println!("Incomplete JSON in buffer, waiting for more data...");
                                 break; // Break inner loop to read more data.
                             }
                             Some(Err(e)) => {
@@ -95,8 +104,6 @@ pub async fn connect_route(
                                 // We must advance past the problematic data to avoid an infinite loop.
                                 // Advance by the offset where the error occurred in the slice + 1 to skip the char causing it.
                                 current_read_offset += error_offset_in_slice + 1;
-                                // Do NOT broadcast this error to the client.
-                                // Do NOT terminate the reader task here; try to recover.
                             }
                             None => {
                                 // The deserializer's iterator is exhausted for the current slice.
@@ -189,13 +196,30 @@ pub async fn send_command(
     let mut tcp_stream_guard = app_state.tcp_stream.lock().unwrap();
 
     if let Some(stream) = tcp_stream_guard.as_mut() {
-        let command_bytes = match serde_json::to_vec(&cmd_payload.json_command) {
+        let mut command_bytes = match serde_json::to_vec(&cmd_payload.json_command) {
             Ok(bytes) => bytes,
             Err(e) => {
                 return HttpResponse::InternalServerError()
                     .body(format!("Failed to serialize command: {}", e));
             }
         };
+
+        // Append delimiter if provided
+        if let Some(delimiter_str) = &cmd_payload.delimiter {
+            if !delimiter_str.is_empty() {
+                let unescaped_delimiter_bytes = unescape_string_to_bytes(delimiter_str);
+                command_bytes.extend_from_slice(&unescaped_delimiter_bytes);
+                println!(
+                    "Appending custom delimiter: input=\"{}\", bytes={:?}",
+                    delimiter_str,
+                    unescaped_delimiter_bytes
+                );
+            }
+        }
+
+        // Log the exact bytes being sent
+        println!("Attempting to send to TCP ({} bytes): {:?}", command_bytes.len(), command_bytes);
+        println!("Attempting to send to TCP (as string lossy): {}", String::from_utf8_lossy(&command_bytes));
 
         if let Err(e) = stream.write_all(&command_bytes).await {
             return HttpResponse::InternalServerError().body(format!("TCP write error: {}", e));
@@ -219,7 +243,23 @@ pub async fn send_text_command_route(
     if let Some(stream) = tcp_stream_guard.as_mut() {
         let command_to_send = payload.text_command.clone();
         let mut command_bytes = payload.text_command.as_bytes().to_vec();
-        command_bytes.push(b'\r'); // Append carriage return
+
+        // Append delimiter if provided
+        if let Some(delimiter_str) = &payload.delimiter {
+            if !delimiter_str.is_empty() {
+                // For now, treat delimiter_str as a literal sequence of characters.
+                // We might need to add unescaping logic later (e.g., "\r" -> actual CR byte)
+                command_bytes.extend_from_slice(delimiter_str.as_bytes());
+                println!("Appending custom delimiter: \"{}\"", delimiter_str);
+            } else {
+                // If delimiter is present but an empty string, append nothing.
+                println!("Custom delimiter is empty, sending command as-is.");
+            }
+        } else {
+            // If delimiter is None (not provided in payload), append nothing by default.
+            // Previous behavior was to always append '\r'.
+            println!("No custom delimiter provided, sending command as-is.");
+        }
 
         println!("Sending raw text command: {}", command_to_send);
 
@@ -242,6 +282,15 @@ pub async fn version_route() -> impl Responder {
     env!("CARGO_PKG_VERSION")
 }
 
+#[get("/api/health")]
+pub async fn health_check() -> impl Responder {
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": "ok",
+        "timestamp": chrono::Utc::now().timestamp(),
+        "message": "Server is running"
+    }))
+}
+
 #[derive(RustEmbed)]
 #[folder = "static/"]
 struct Asset;
@@ -254,11 +303,345 @@ pub async fn embedded_file_handler(req: HttpRequest) -> impl Responder {
         Some(content) => {
             let body = actix_web::body::BoxBody::new(content.data.into_owned());
             let mime = mime_guess::from_path(file).first_or_octet_stream();
-            println!("Serving file: {} with MIME type: {}", file, mime);
+            //println!("Serving file: {} with MIME type: {}", file, mime);
             HttpResponse::Ok()
                 .content_type(mime.as_ref())
                 .body(body)
         }
         None => HttpResponse::NotFound().body("404 Not Found"),
     }
+}
+
+// --- Palette Handlers ---
+
+#[get("/api/palettes")]
+pub async fn list_palettes_handler() -> impl Responder {
+    match list_palettes_fs() {
+        Ok(palettes) => HttpResponse::Ok().json(palettes),
+        Err(e) => HttpResponse::InternalServerError().body(e),
+    }
+}
+
+#[post("/api/palettes")]
+pub async fn create_palette(
+    palette_payload: web::Json<PalettePayload>,
+    app_state: web::Data<AppState>,
+) -> impl Responder {
+    let new_palette = Palette {
+        name: palette_payload.name.clone(),
+        commands: palette_payload.commands.clone(),
+    };
+
+    match save_palette(&new_palette) {
+        Ok(_) => {
+            app_state.palettes.lock().unwrap().insert(new_palette.name.clone(), new_palette.clone());
+            HttpResponse::Ok().json(new_palette)
+        }
+        Err(e) => HttpResponse::InternalServerError().body(format!("Failed to save palette: {}", e)),
+    }
+}
+
+#[put("/api/palettes/{name}")]
+async fn update_palette(
+    path: web::Path<String>,
+    palette_payload: web::Json<PalettePayload>,
+    app_state: web::Data<AppState>,
+) -> impl Responder {
+    let palette_name_from_path = path.into_inner();
+    let incoming_palette_data = palette_payload.into_inner();
+
+    if palette_name_from_path != incoming_palette_data.name {
+        return HttpResponse::BadRequest().body(
+            format!(
+                "Palette name in URL ('{}') does not match name in payload ('{}'). Renaming not supported via this update method.",
+                palette_name_from_path, incoming_palette_data.name
+            )
+        );
+    }
+
+    let mut palettes_locked = app_state.palettes.lock().unwrap();
+
+    if let Some(palette_in_memory) = palettes_locked.get_mut(&palette_name_from_path) {
+        // Palette found in memory, proceed to update
+        palette_in_memory.commands = incoming_palette_data.commands.clone();
+        let palette_to_save_to_disk = palette_in_memory.clone();
+        drop(palettes_locked); // Release lock before file I/O
+
+        match save_palette(&palette_to_save_to_disk) {
+            Ok(_) => {
+                HttpResponse::Ok().json(palette_to_save_to_disk)
+            }
+            Err(e) => {
+                eprintln!("Failed to save updated palette '{}' to disk: {}", palette_name_from_path, e);
+                // Attempt to revert in-memory state by reloading the original palette from disk
+                let mut palettes_re_locked = app_state.palettes.lock().unwrap();
+                match load_palette(&palette_name_from_path) {
+                    Ok(original_palette_from_disk) => {
+                        palettes_re_locked.insert(palette_name_from_path.clone(), original_palette_from_disk);
+                        eprintln!("Successfully reloaded palette '{}' from disk into memory after save failure.", palette_name_from_path);
+                    }
+                    Err(load_err) => {
+                        eprintln!("Failed to reload original palette '{}' from disk after save failure: {}. Removing from memory.", palette_name_from_path, load_err);
+                        palettes_re_locked.remove(&palette_name_from_path);
+                    }
+                }
+                HttpResponse::InternalServerError().body(format!("Failed to save updated palette to disk: {}. In-memory state was attempted to be reverted.", e))
+            }
+        }
+    } else {
+        // Palette not in memory, try loading from disk
+        drop(palettes_locked); // Release current lock before disk I/O
+
+        match load_palette(&palette_name_from_path) {
+            Ok(mut palette_from_disk) => {
+                // Palette loaded successfully from disk.
+                // Update its commands with the incoming data.
+                palette_from_disk.commands = incoming_palette_data.commands; // .clone() not needed as incoming_palette_data is consumed here or its field is.
+
+                // Save the modified palette back to disk.
+                match save_palette(&palette_from_disk) {
+                    Ok(_) => {
+                        // Successfully saved to disk. Now, update the in-memory cache.
+                        let mut palettes_locked_again = app_state.palettes.lock().unwrap();
+                        palettes_locked_again.insert(palette_name_from_path.clone(), palette_from_disk.clone());
+                        HttpResponse::Ok().json(palette_from_disk)
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to save updated palette ('{}') (after loading from disk): {}", palette_name_from_path, e);
+                        HttpResponse::InternalServerError().body(format!("Failed to save updated palette: {}", e))
+                    }
+                }
+            }
+            Err(load_error) => {
+                // Failed to load from disk (e.g., truly not found, or other FS error).
+                eprintln!("Update failed: Palette '{}' not found in memory and also failed to load from disk: {}", palette_name_from_path, load_error);
+                HttpResponse::NotFound().body(format!("Palette '{}' not found on disk. Cannot update.", palette_name_from_path))
+            }
+        }
+    }
+}
+
+#[get("/api/palettes/{name}")]
+pub async fn get_palette_handler(name: web::Path<String>) -> impl Responder {
+    let palette_name = name.into_inner(); // name is moved here
+    match load_palette(&palette_name) {
+        Ok(palette) => HttpResponse::Ok().json(palette),
+        Err(e) => {
+            if e.contains("not found") {
+                HttpResponse::NotFound().body(format!("Palette '{}' not found: {}", palette_name, e))
+            } else {
+                HttpResponse::InternalServerError().body(format!("Error loading palette '{}': {}", palette_name, e))
+            }
+        }
+    }
+}
+
+#[delete("/api/palettes/{name}")]
+pub async fn delete_palette_handler(name: web::Path<String>) -> impl Responder {
+    let palette_name_for_response = name.as_str().to_string(); // Clone the name for the response *before* it's moved.
+    match delete_palette_fs(&name.into_inner()) { // name is moved here
+        Ok(_) => HttpResponse::Ok().body(format!("Palette '{}' deleted successfully.", palette_name_for_response)),
+        Err(e) => {
+            if e.contains("not found") {
+                HttpResponse::NotFound().body(format!("Palette '{}' not found for deletion: {}", palette_name_for_response, e))
+            } else {
+                HttpResponse::InternalServerError().body(format!("Error deleting palette '{}': {}", palette_name_for_response, e))
+            }
+        }
+    }
+}
+
+#[post("/api/palettes/import")]
+pub async fn import_palette_handler(mut payload: Multipart) -> impl Responder {
+    let mut temp_file_path: Option<PathBuf> = None;
+
+    // Iterate over multipart items
+    while let Some(item) = payload.try_next().await.ok().flatten() {
+        let mut field = item;
+        let content_disposition = field.content_disposition();
+        let field_name = content_disposition.get_name().unwrap_or_default();
+
+        if field_name == "palette_file" {
+            let filename = content_disposition.get_filename().unwrap_or_else(|| "upload.json");
+            let unique_filename = format!("{}-{}", Uuid::new_v4(), filename);
+            
+            // Create a temporary path
+            let mut path = std::env::temp_dir();
+            path.push(unique_filename);
+            temp_file_path = Some(path.clone());
+
+            let mut f = match File::create(&path) {
+                Ok(f) => f,
+                Err(e) => return HttpResponse::InternalServerError().body(format!("Failed to create temp file: {}", e)),
+            };
+
+            // Field in turn is stream of *Bytes* object
+            while let Some(chunk) = field.try_next().await.ok().flatten() {
+                if let Err(e) = f.write_all(&chunk) {
+                    // Cleanup temp file on error
+                    if let Some(p) = &temp_file_path {
+                        let _ = std::fs::remove_file(p);
+                    }
+                    return HttpResponse::InternalServerError().body(format!("Failed to write to temp file: {}", e));
+                }
+            }
+            break;
+        }
+    }
+
+    if let Some(path) = temp_file_path {
+        match import_palette_fs(&path) {
+            Ok(palette) => {
+                let _ = std::fs::remove_file(&path); // Clean up temp file
+                HttpResponse::Ok().json(palette)
+            }
+            Err(e) => {
+                let _ = std::fs::remove_file(&path); // Clean up temp file
+                HttpResponse::BadRequest().body(e) // Bad request if import fails (e.g., bad JSON)
+            }
+        }
+    } else {
+        HttpResponse::BadRequest().body("No palette file uploaded or field name is not 'palette_file'.")
+    }
+}
+
+#[get("/api/palettes/{name}/export")]
+pub async fn export_palette_handler(name: web::Path<String>) -> impl Responder {
+    let palette_name = name.into_inner(); // name is moved here
+    match load_palette(&palette_name) {
+        Ok(palette) => {
+            match serde_json::to_string_pretty(&palette) {
+                Ok(json_string) => {
+                    HttpResponse::Ok()
+                        .content_type("application/json")
+                        .insert_header(("Content-Disposition", format!("attachment; filename=\"{}.json\"", palette_name)))
+                        .body(json_string)
+                }
+                Err(e) => HttpResponse::InternalServerError().body(format!("Failed to serialize palette '{}': {}", palette_name, e)),
+            }
+        }
+        Err(e) => {
+            if e.contains("not found") {
+                HttpResponse::NotFound().body(format!("Palette '{}' not found for export: {}", palette_name, e))
+            } else {
+                HttpResponse::InternalServerError().body(format!("Error exporting palette '{}': {}", palette_name, e))
+            }
+        }
+    }
+}
+
+#[post("/api/palettes/{name}/commands")]
+pub async fn add_command_to_palette(
+    path: web::Path<String>,
+    command_payload: web::Json<AddCommandPayload>,
+    app_state: web::Data<AppState>,
+) -> impl Responder {
+    let palette_name = path.into_inner();
+    let command_data = command_payload.into_inner();
+    let command_value_to_insert = command_data.command_data.clone();
+
+    // Check if command name is empty
+    if command_data.command_name.trim().is_empty() {
+        return HttpResponse::BadRequest().body("Command name cannot be empty.");
+    }
+
+    let mut palette: Palette;
+    { // Scope for initial lock to get palette data
+        let app_palettes_lock_guard = app_state.palettes.lock().unwrap();
+        if let Some(palette_in_memory) = app_palettes_lock_guard.get(&palette_name) {
+            palette = palette_in_memory.clone();
+            // Lock `app_palettes_lock_guard` is dropped here as it goes out of scope.
+        } else {
+            drop(app_palettes_lock_guard); // Explicitly drop before disk I/O
+            match load_palette(&palette_name) {
+                Ok(palette_from_disk) => {
+                    // Clone palette_from_disk before inserting into cache,
+                    // as palette_from_disk will be moved into the cache.
+                    palette = palette_from_disk.clone(); 
+                    // Update cache with the loaded palette
+                    let mut cache_update_lock_guard = app_state.palettes.lock().unwrap();
+                    cache_update_lock_guard.insert(palette_name.clone(), palette_from_disk);
+                    // cache_update_lock_guard drops here
+                }
+                Err(_) => {
+                    return HttpResponse::NotFound().body(format!("Palette '{}' not found.", palette_name));
+                }
+            }
+        }
+    } // Initial lock `app_palettes_lock_guard` is guaranteed to be released here.
+
+    // `palette` is now populated and no locks on `app_state.palettes` are held.
+    // Now, modify `palette` as before.
+
+    // Ensure "Saved Commands" category exists
+    if !palette.commands.contains_key("Saved Commands") {
+        palette.commands.insert("Saved Commands".to_string(), indexmap::IndexMap::new());
+    }
+
+    // Check if command already exists in "Saved Commands" category
+    // This check is on the local `palette` clone.
+    if let Some(saved_commands) = palette.commands.get("Saved Commands") {
+        if saved_commands.contains_key(&command_data.command_name) {
+            return HttpResponse::Conflict().json(serde_json::json!({
+                "error": "Command already exists",
+                "message": format!("Command '{}' already exists in palette '{}'", command_data.command_name, palette_name)
+            }));
+        }
+    }
+
+    // Add the command to the "Saved Commands" category in the local `palette` clone.
+    // Use the `command_value_to_insert` (the clone made at the beginning).
+    if let Some(saved_commands) = palette.commands.get_mut("Saved Commands") {
+        saved_commands.insert(command_data.command_name.clone(), command_value_to_insert);
+    } else {
+        eprintln!("Critical error: 'Saved Commands' category existed but could not get mut ref, or was unexpectedly removed.");
+        return HttpResponse::InternalServerError().body("Failed to access 'Saved Commands' category internally for command insertion.");
+    }
+
+    // Save the updated palette to disk. No locks on app_state.palettes are held here.
+    match save_palette(&palette) {
+        Ok(_) => {
+            // Update in-memory cache with the successfully saved version.
+            let mut final_cache_lock = app_state.palettes.lock().unwrap();
+            final_cache_lock.insert(palette_name.clone(), palette.clone());
+            // final_cache_lock drops here.
+            
+            HttpResponse::Ok().json(serde_json::json!({
+                "message": format!("Command '{}' added to palette '{}' successfully", command_data.command_name, palette_name),
+                "palette": palette
+            }))
+        }
+        Err(e) => {
+            eprintln!("Failed to save palette '{}' after command add: {}", palette_name, e);
+            HttpResponse::InternalServerError().body(format!("Failed to save palette: {}", e))
+        }
+    }
+}
+
+// Helper function to unescape a string into a byte vector
+// Translates common escape sequences like \r, \n, \t, \0, \\
+// Other characters are passed through as their UTF-8 bytes.
+fn unescape_string_to_bytes(s: &str) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('r') => bytes.push(b'\r'),
+                Some('n') => bytes.push(b'\n'),
+                Some('t') => bytes.push(b'\t'),
+                Some('0') => bytes.push(b'\0'),
+                Some('\\') => bytes.push(b'\\'),
+                Some(other) => {
+                    // Not a recognized escape sequence, push backslash and the char
+                    bytes.push(b'\\');
+                    bytes.extend(other.to_string().as_bytes());
+                }
+                None => bytes.push(b'\\'), // Trailing backslash
+            }
+        } else {
+            bytes.extend(c.to_string().as_bytes());
+        }
+    }
+    bytes
 } 

@@ -9,6 +9,8 @@ export class UIManager {
     this.commandManager = null;
 
     this.initializeResizeHandle();
+    this.loadedPaletteName = ""; // Added to store current palette name
+    this.palettes = []; // Added to store the list of palettes
   }
 
   // Set command manager reference
@@ -45,6 +47,14 @@ export class UIManager {
 
     if (Object.keys(commandsData).length === 0) {
       tabContainer.textContent = "No commands loaded or error in loading.";
+      tabContentContainer.innerHTML = ""; // Also clear content container
+      // Clear other related UI elements as before
+      const rawJsonDisplayElement = document.getElementById("rawJsonDisplay");
+      const filledJsonDisplayElement = document.getElementById("filledJsonDisplay");
+      const variableInputsContainer = document.getElementById("variableInputsContainer");
+      if (rawJsonDisplayElement) rawJsonDisplayElement.innerHTML = "";
+      if (filledJsonDisplayElement) filledJsonDisplayElement.innerHTML = "";
+      if (variableInputsContainer) variableInputsContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
       return;
     }
 
@@ -396,8 +406,7 @@ export class UIManager {
 
     rawToggle.addEventListener('click', () => {
       this.isRawJsonExpanded = !this.isRawJsonExpanded;
-      rawToggle.textContent = this.isRawJsonExpanded ? 'Expanded' : 'Compact';
-      rawToggle.classList.toggle('expanded', this.isRawJsonExpanded);
+      rawToggle.textContent = this.isRawJsonExpanded ? '➖' : '➕';
       
       // Get the current raw JSON content and reformat it
       const element = document.getElementById("rawJsonDisplay");
@@ -411,8 +420,7 @@ export class UIManager {
 
     filledToggle.addEventListener('click', () => {
       this.isFilledJsonExpanded = !this.isFilledJsonExpanded;
-      filledToggle.textContent = this.isFilledJsonExpanded ? 'Expanded' : 'Compact';
-      filledToggle.classList.toggle('expanded', this.isFilledJsonExpanded);
+      filledToggle.textContent = this.isFilledJsonExpanded ? '➖' : '➕';
       
       // Get the current filled JSON content and reformat it
       const element = document.getElementById("filledJsonDisplay");
@@ -423,5 +431,103 @@ export class UIManager {
         }
       }
     });
+  }
+
+  // Clear the command palette display (tabs and content)
+  clearCommandPalette() {
+    const tabContainer = document.getElementById("tabContainer");
+    const tabContentContainer = document.getElementById("tabContentContainer");
+    const rawJsonDisplayElement = document.getElementById("rawJsonDisplay");
+    const filledJsonDisplayElement = document.getElementById("filledJsonDisplay");
+    const variableInputsContainer = document.getElementById("variableInputsContainer");
+
+    if (tabContainer) tabContainer.innerHTML = "<p>No palette loaded or palette is empty.</p>";
+    if (tabContentContainer) tabContentContainer.innerHTML = "";
+    if (rawJsonDisplayElement) rawJsonDisplayElement.innerHTML = "";
+    if (filledJsonDisplayElement) filledJsonDisplayElement.innerHTML = "";
+    if (variableInputsContainer) variableInputsContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
+    
+    // Also clear current command selection in commandManager if it exists
+    if (this.commandManager) {
+        this.commandManager.clearCurrentCommand();
+    }
+    this.updateLoadedPaletteName(""); // Clear the displayed palette name
+  }
+
+  // Populate the palette selector dropdown
+  populatePaletteSelector(palettes) {
+    this.palettes = palettes; // Store for later use by getPaletteList
+    const selector = document.getElementById("paletteSelector");
+    if (!selector) {
+        console.error("paletteSelector element not found");
+        return;
+    }
+    selector.innerHTML = '<option value="">Select a Palette</option>'; // Default option
+    palettes.forEach(paletteName => {
+      const option = document.createElement("option");
+      option.value = paletteName;
+      option.textContent = paletteName;
+      selector.appendChild(option);
+    });
+  }
+  
+  // Get the list of palettes currently in the selector
+  getPaletteList() {
+    return this.palettes;
+  }
+
+  // Set the selected value of the palette selector
+  setSelectedPalette(paletteName) {
+    const selector = document.getElementById("paletteSelector");
+    if (selector) {
+        selector.value = paletteName;
+    }
+  }
+
+  // Update the displayed name of the loaded palette
+  updateLoadedPaletteName(paletteName) {
+    this.loadedPaletteName = paletteName;
+
+    // Enable/disable save/delete/edit buttons based on whether a palette is loaded
+    const saveButton = document.getElementById("savePaletteButton");
+    const deleteButton = document.getElementById("deletePaletteButton");
+    const editButton = document.getElementById("editPaletteButton"); // Get the new edit button
+
+    if (saveButton) saveButton.disabled = !paletteName;
+    if (deleteButton) deleteButton.disabled = !paletteName;
+    if (editButton) editButton.disabled = !paletteName; // Enable/disable edit button
+  }
+
+  // Get the name of the currently selected/loaded palette
+  getCurrentPaletteName() {
+    const selector = document.getElementById("paletteSelector");
+    if (selector && selector.value) {
+        return selector.value;
+    }
+    return this.loadedPaletteName; // Fallback or primary source
+  }
+
+  // Modal handling for palette editor
+  showEditPaletteModal(paletteContent) {
+    const modal = document.getElementById("editPaletteModal");
+    const textarea = document.getElementById("paletteEditorTextarea");
+    if (modal && textarea) {
+      textarea.value = paletteContent;
+      modal.style.display = "block";
+    } else {
+      console.error("Edit palette modal or textarea not found.");
+    }
+  }
+
+  hideEditPaletteModal() {
+    const modal = document.getElementById("editPaletteModal");
+    if (modal) {
+      modal.style.display = "none";
+    }
+  }
+
+  getPaletteEditorContent() {
+    const textarea = document.getElementById("paletteEditorTextarea");
+    return textarea ? textarea.value : null;
   }
 }

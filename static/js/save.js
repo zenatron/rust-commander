@@ -1,4 +1,3 @@
-// Save command functionality module
 export class SaveManager {
   constructor(commandManager, uiManager) {
     this.commandManager = commandManager;
@@ -6,16 +5,24 @@ export class SaveManager {
     this.responseDiv = document.getElementById('response');
   }
 
-  // Show save modal - Updated to include command name input within the modal
-  showSaveModal() {
+  async showSaveModal() {
     const currentCommand = this.commandManager.getCurrentFilledCommand();
     if (!currentCommand) {
       if (this.responseDiv) this.responseDiv.textContent = "Error: No command selected or filled to save.";
       else this.uiManager.showAlert("Error: No command selected or filled to save.", "error");
       return;
     }
-    
-    // Validation for variable inputs should be done by the caller (App.js) before calling showSaveModal
+
+    // Fetch available palettes
+    let availablePalettes = [];
+    try {
+      const response = await fetch('/api/palettes');
+      if (response.ok) {
+        availablePalettes = await response.json();
+      }
+    } catch (error) {
+      console.error('Error fetching palettes:', error);
+    }
 
     if (this.responseDiv) this.responseDiv.textContent = "Enter command name and choose save option...";
 
@@ -33,57 +40,80 @@ export class SaveManager {
     `;
 
     const dialog = document.createElement('div');
-    dialog.classList.add('save-modal-dialog'); // Add class for potential global styling
+    dialog.classList.add('save-modal-dialog');
     dialog.style.cssText = `
       background: white; padding: 20px; border-radius: 8px; 
       max-width: 500px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     `;
 
-    // Add command name input field directly into the modal HTML
+    // Build palette options HTML
+    let paletteOptionsHtml = '';
+    if (availablePalettes.length > 0) {
+      paletteOptionsHtml = `
+        <div style="margin-bottom: 15px;">
+          <label for="paletteSelect" style="display: block; margin-bottom: 5px; font-weight: bold;">Select Palette:</label>
+          <select id="paletteSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="">-- Select a palette --</option>
+            ${availablePalettes.map(palette => `<option value="${this.escapeHtml(palette)}">${this.escapeHtml(palette)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    }
+
     dialog.innerHTML = `
-      <h3 style="margin-top: 0;">Save Command</h3>
+      <h3 style="margin-top: 0;">Save Command to Palette</h3>
       <input type="text" id="modalSaveCommandName" placeholder="Enter command name..." style="width: 95%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em;">
+      ${paletteOptionsHtml}
       <p style="margin-top: 0; margin-bottom: 15px;">Choose how you want to save this command:</p>
       <div style="display: flex; flex-direction: column; gap: 10px;">
-        <button id="dynamicSaveToNewFile" style="padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
-          <strong>Create New File</strong><br>
-          <small style="opacity: 0.9;">Download a new JSON file with this command</small>
-        </button>
-        <button id="dynamicSaveToExistingFile" style="padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
-          <strong>Add to Existing File</strong><br>
-          <small style="opacity: 0.9;">Select a JSON file to add this command to</small>
+        ${availablePalettes.length > 0 ? `
+          <button id="dynamicSaveToExistingPalette" style="padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
+            <strong>Add to Selected Palette</strong><br>
+            <small style="opacity: 0.9;">Add this command to the selected palette</small>
+          </button>
+        ` : ''}
+        <button id="dynamicSaveToNewPalette" style="padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
+          <strong>Create New Palette</strong><br>
+          <small style="opacity: 0.9;">Create a new palette with this command</small>
         </button>
         <button id="dynamicCancelSave" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;">
           Cancel
         </button>
       </div>
-      <input type="file" id="dynamicFileSelector" accept=".json" style="display: none;">
     `;
 
     modal.appendChild(dialog);
     document.body.appendChild(modal);
 
-    const commandNameInputInModal = dialog.querySelector('#modalSaveCommandName');
-    const fileSelector = dialog.querySelector('#dynamicFileSelector');
-    const saveToNewFileBtn = dialog.querySelector('#dynamicSaveToNewFile');
-    const saveToExistingFileBtn = dialog.querySelector('#dynamicSaveToExistingFile');
+    const commandNameInput = dialog.querySelector('#modalSaveCommandName');
+    const paletteSelect = dialog.querySelector('#paletteSelect');
+    const saveToExistingPaletteBtn = dialog.querySelector('#dynamicSaveToExistingPalette');
+    const saveToNewPaletteBtn = dialog.querySelector('#dynamicSaveToNewPalette');
     const cancelSaveBtn = dialog.querySelector('#dynamicCancelSave');
 
     // Focus the command name input when modal opens
-    commandNameInputInModal.focus();
+    commandNameInput.focus();
 
-    saveToNewFileBtn.onclick = () => {
-      const commandName = commandNameInputInModal.value.trim();
-      if (!this.validateCommandName(commandName)) return;
-      this.createNewFile(commandName, currentCommand, modal);
-    };
+    if (saveToExistingPaletteBtn) {
+      saveToExistingPaletteBtn.onclick = async () => {
+        const commandName = commandNameInput.value.trim();
+        const selectedPalette = paletteSelect ? paletteSelect.value : '';
+        
+        if (!this.validateCommandName(commandName)) return;
+        if (!selectedPalette) {
+          if (this.responseDiv) this.responseDiv.textContent = "Please select a palette.";
+          else this.uiManager.showAlert("Please select a palette.", "error");
+          return;
+        }
+        
+        await this.addToExistingPalette(selectedPalette, commandName, currentCommand, modal);
+      };
+    }
     
-    saveToExistingFileBtn.onclick = () => {
-      const commandName = commandNameInputInModal.value.trim();
+    saveToNewPaletteBtn.onclick = async () => {
+      const commandName = commandNameInput.value.trim();
       if (!this.validateCommandName(commandName)) return;
-      // Command name is validated, now trigger file selection.
-      // It will be passed to handleAddToExistingFile through the event chain if needed, or retrieved again.
-      fileSelector.click(); 
+      await this.createNewPalette(commandName, currentCommand, modal);
     };
 
     cancelSaveBtn.onclick = () => this.closeDynamicModal(modal, escapeKeyListener);
@@ -100,18 +130,6 @@ export class SaveManager {
       }
     };
     document.addEventListener('keydown', escapeKeyListener);
-
-    fileSelector.onchange = async (event) => {
-      // Retrieve command name again, in case it was typed after clicking 'add to existing' but before selecting file.
-      const commandName = commandNameInputInModal.value.trim();
-      if (!this.validateCommandName(commandName)) {
-        // If name becomes invalid before file selection, clear file input and refocus.
-        event.target.value = null; // Clear the file input
-        commandNameInputInModal.focus();
-        return;
-      }
-      await this.handleAddToExistingFile(event, commandName, currentCommand, modal, dialog, escapeKeyListener);
-    };
   }
 
   validateCommandName(commandName) {
@@ -147,134 +165,245 @@ export class SaveManager {
          .replace(/'/g, "&#039;");
   }
 
-  createNewFile(commandName, currentCommand, modalToClose) {
-    const commandsToSave = {
-      "Saved Commands": {
-        [commandName]: currentCommand
-      }
-    };
-    this.downloadFile(
-      JSON.stringify(commandsToSave, null, 2),
-      `${commandName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_commands.json`,
-      'application/json'
-    );
-    if (this.responseDiv) this.responseDiv.textContent = `Command '${this.escapeHtml(commandName)}' downloaded as new file!`;
-    else this.uiManager.showAlert(`Command '${this.escapeHtml(commandName)}' downloaded as new file!`, 'success');
-    
-    // No external saveCommandNameInput to clear now
-    this.closeDynamicModal(modalToClose, null); // Escape listener already passed to closeDynamicModal from its original scope
-  }
-
-  async handleAddToExistingFile(event, commandName, currentCommand, modal, dialog, escapeKeyListenerRef) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // Command name is already validated and passed as an argument.
-
+  async addToExistingPalette(paletteName, commandName, currentCommand, modalToClose) {
     try {
-      if (this.responseDiv) this.responseDiv.textContent = `Reading ${this.escapeHtml(file.name)}...`;
-      const fileContent = await file.text();
-      let existingData;
-      try {
-        existingData = JSON.parse(fileContent);
-      } catch (e) {
-        if (this.responseDiv) this.responseDiv.textContent = "Error: Selected file is not valid JSON.";
-        else this.uiManager.showAlert("Error: Selected file is not valid JSON.", "error");
-        event.target.value = null; // Clear file input to allow re-selection
+      // Add timeout and retry logic
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      console.log(`Attempting to save command "${commandName}" to palette "${paletteName}"`);
+      
+      const response = await fetch(`/api/palettes/${encodeURIComponent(paletteName)}/commands`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          command_name: commandName,
+          command_data: currentCommand
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (response.status === 409) {
+        // Command already exists - ask for confirmation
+        const overwrite = confirm(`Command "${this.escapeHtml(commandName)}" already exists in palette "${this.escapeHtml(paletteName)}". Overwrite?`);
+        if (!overwrite) {
+          if (this.responseDiv) this.responseDiv.textContent = "Save cancelled. Command name already exists.";
+          return;
+        }
+        
+        // User confirmed overwrite - we need to update the palette directly
+        await this.overwriteCommandInPalette(paletteName, commandName, currentCommand, modalToClose);
         return;
       }
 
-      if (!existingData || typeof existingData !== 'object') {
-        existingData = { "Saved Commands": {} };
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
       }
-      if (!existingData["Saved Commands"] || typeof existingData["Saved Commands"] !== 'object') {
-        existingData["Saved Commands"] = {};
+
+      const result = await response.json();
+      console.log('Save successful:', result);
+      
+      if (this.responseDiv) this.responseDiv.textContent = `Command '${this.escapeHtml(commandName)}' added to palette '${this.escapeHtml(paletteName)}' successfully!`;
+      else this.uiManager.showAlert(`Command '${this.escapeHtml(commandName)}' added to palette '${this.escapeHtml(paletteName)}' successfully!`, 'success');
+      
+      this.closeDynamicModal(modalToClose, null);
+      
+      // Refresh the palette list if this is the current palette
+      if (window.commanderApp && typeof window.commanderApp.fetchPalettes === 'function') {
+        await window.commanderApp.fetchPalettes();
+      }
+    } catch (error) {
+      console.error('Error adding command to palette:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Unknown error occurred';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+        errorMessage = 'Network connection error. Please check your connection and try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Could not connect to server. Please ensure the server is running.';
+      } else {
+        errorMessage = error.message;
       }
       
-      if (existingData["Saved Commands"].hasOwnProperty(commandName)) {
-          const overwrite = confirm(`Command "${this.escapeHtml(commandName)}" already exists in "${this.escapeHtml(file.name)}". Overwrite?`);
-          if (!overwrite) {
-              if (this.responseDiv) this.responseDiv.textContent = "Save cancelled. Command name already exists.";
-              event.target.value = null; // Clear file input
-              return;
-          }
+      if (this.responseDiv) this.responseDiv.textContent = `Error adding command: ${errorMessage}`;
+      else this.uiManager.showAlert(`Error adding command: ${errorMessage}`, 'error');
+      
+      const retry = confirm(`Failed to save command: ${errorMessage}\n\nWould you like to try again?`);
+      if (retry) {
+        setTimeout(() => {
+          this.addToExistingPalette(paletteName, commandName, currentCommand, modalToClose);
+        }, 1000);
+      }
+    }
+  }
+
+  async overwriteCommandInPalette(paletteName, commandName, currentCommand, modalToClose) {
+    try {
+      // Add timeout for fetch requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      console.log(`Attempting to overwrite command "${commandName}" in palette "${paletteName}"`);
+      
+      // First, fetch the current palette
+      const getResponse = await fetch(`/api/palettes/${encodeURIComponent(paletteName)}`, {
+        signal: controller.signal
+      });
+      if (!getResponse.ok) {
+        throw new Error('Failed to fetch palette for update');
+      }
+      
+      const palette = await getResponse.json();
+      
+      // Ensure "Saved Commands" category exists
+      if (!palette.commands["Saved Commands"]) {
+        palette.commands["Saved Commands"] = {};
+      }
+      
+      // Update the command
+      palette.commands["Saved Commands"][commandName] = currentCommand;
+      
+      // Save the updated palette
+      const updateResponse = await fetch(`/api/palettes/${encodeURIComponent(paletteName)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: paletteName,
+          commands: palette.commands
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.text();
+        throw new Error(`HTTP error! status: ${updateResponse.status}, message: ${errorData}`);
       }
 
-      existingData["Saved Commands"][commandName] = currentCommand;
-
-      dialog.innerHTML = `
-        <h3 style="margin-top: 0;">Update File: "${this.escapeHtml(file.name)}"</h3>
-        <p style="color: #28a745;">SUCCESS: Command "${this.escapeHtml(commandName)}" will be added/updated.</p>
-        <p><strong>Commands in file (under "Saved Commands"):</strong></p>
-        <ul style="margin: 10px 0; padding-left: 20px; max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;">
-          ${Object.keys(existingData["Saved Commands"] || {}).map(cmd => 
-            cmd === commandName ? 
-              `<li style="color: #28a745; font-weight: bold;">${this.escapeHtml(cmd)} (NEW/UPDATED)</li>` :
-              `<li>${this.escapeHtml(cmd)}</li>`
-          ).join('')}
-        </ul>
-        <p style="font-size: 0.9em; color: #666; margin: 15px 0;">
-          <strong>Note:</strong> This will download an updated version. Replace the original file.
-        </p>
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button id="dynamicConfirmUpdate" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Download Updated File
-          </button>
-          <button id="dynamicCancelUpdate" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Cancel
-          </button>
-        </div>
-      `;
-
-      const confirmUpdateBtn = dialog.querySelector('#dynamicConfirmUpdate');
-      const cancelUpdateBtn = dialog.querySelector('#dynamicCancelUpdate');
-
-      confirmUpdateBtn.onclick = () => {
-        this.downloadFile(
-          JSON.stringify(existingData, null, 2),
-          file.name,
-          'application/json'
-        );
-        if (this.responseDiv) this.responseDiv.textContent = `SUCCESS: Updated "${this.escapeHtml(file.name)}" downloaded!`;
-        else this.uiManager.showAlert(`SUCCESS: Updated "${this.escapeHtml(file.name)}" downloaded!`, 'success');
-        this.closeDynamicModal(modal, escapeKeyListenerRef);
-      };
-      cancelUpdateBtn.onclick = () => {
-        if (this.responseDiv) this.responseDiv.textContent = "Update cancelled.";
-        this.closeDynamicModal(modal, escapeKeyListenerRef);
-      };
+      console.log('Overwrite successful');
+      
+      if (this.responseDiv) this.responseDiv.textContent = `Command '${this.escapeHtml(commandName)}' updated in palette '${this.escapeHtml(paletteName)}' successfully!`;
+      else this.uiManager.showAlert(`Command '${this.escapeHtml(commandName)}' updated in palette '${this.escapeHtml(paletteName)}' successfully!`, 'success');
+      
+      this.closeDynamicModal(modalToClose, null);
+      
+      // Refresh the palette list
+      if (window.commanderApp && typeof window.commanderApp.fetchPalettes === 'function') {
+        await window.commanderApp.fetchPalettes();
+      }
     } catch (error) {
-      console.error('Error processing file for "Add to Existing":', error);
-      if (this.responseDiv) this.responseDiv.textContent = `Error processing file: ${error.message}`;
-      else this.uiManager.showAlert(`Error processing file: ${error.message}`, 'error');
-      this.closeDynamicModal(modal, escapeKeyListenerRef); // Close modal on error
+      console.error('Error updating command in palette:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Unknown error occurred';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+        errorMessage = 'Network connection error. Please check your connection and try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Could not connect to server. Please ensure the server is running.';
+      } else {
+        errorMessage = error.message;
+      }
+      
+      if (this.responseDiv) this.responseDiv.textContent = `Error updating command: ${errorMessage}`;
+      else this.uiManager.showAlert(`Error updating command: ${errorMessage}`, 'error');
+      
+      const retry = confirm(`Failed to update command: ${errorMessage}\n\nWould you like to try again?`);
+      if (retry) {
+        setTimeout(() => {
+          this.overwriteCommandInPalette(paletteName, commandName, currentCommand, modalToClose);
+        }, 1000);
+      }
     }
   }
 
-  // promptForCommandName() is now largely obsolete as name is taken from modal input.
-  // Kept for reference or if a direct prompt is ever needed again.
-  promptForCommandName(currentVal = '') {
-    let commandName = prompt('Enter a name for this command:', currentVal);
-    if (commandName === null) return null; // User cancelled prompt
-    commandName = commandName.trim();
-    if (!commandName) {
-      if (this.responseDiv) this.responseDiv.textContent = 'Command name cannot be empty';
-      else this.uiManager.showAlert('Command name cannot be empty', 'error');
-      return null; // Indicate failure due to empty name
+  async createNewPalette(commandName, currentCommand, modalToClose) {
+    const paletteName = prompt("Enter name for the new palette:");
+    if (!paletteName || paletteName.trim() === "") {
+      if (this.responseDiv) this.responseDiv.textContent = "Palette name cannot be empty.";
+      else this.uiManager.showAlert("Palette name cannot be empty.", "error");
+      return;
     }
-    return commandName;
-  }
 
-  downloadFile(content, filename, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const newPaletteData = {
+        "Saved Commands": {
+          [commandName]: currentCommand
+        }
+      };
+
+      // Add timeout for fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      console.log(`Attempting to create new palette "${paletteName}" with command "${commandName}"`);
+
+      const response = await fetch('/api/palettes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: paletteName.trim(), commands: newPaletteData }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
+      }
+
+      console.log('New palette created successfully');
+
+      if (this.responseDiv) this.responseDiv.textContent = `New palette '${this.escapeHtml(paletteName)}' created with command '${this.escapeHtml(commandName)}'!`;
+      else this.uiManager.showAlert(`New palette '${this.escapeHtml(paletteName)}' created with command '${this.escapeHtml(commandName)}'!`, 'success');
+      
+      this.closeDynamicModal(modalToClose, null);
+      
+      // Refresh the palette list and load the new palette
+      if (window.commanderApp && typeof window.commanderApp.fetchPalettes === 'function') {
+        await window.commanderApp.fetchPalettes();
+        if (typeof window.commanderApp.loadPalette === 'function') {
+          await window.commanderApp.loadPalette(paletteName.trim());
+        }
+      }
+    } catch (error) {
+      console.error('Error creating new palette:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Unknown error occurred';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+        errorMessage = 'Network connection error. Please check your connection and try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Could not connect to server. Please ensure the server is running.';
+      } else {
+        errorMessage = error.message;
+      }
+      
+      if (this.responseDiv) this.responseDiv.textContent = `Error creating palette: ${errorMessage}`;
+      else this.uiManager.showAlert(`Error creating palette: ${errorMessage}`, 'error');
+      
+      const retry = confirm(`Failed to create palette: ${errorMessage}\n\nWould you like to try again?`);
+      if (retry) {
+        setTimeout(() => {
+          this.createNewPalette(commandName, currentCommand, modalToClose);
+        }, 1000);
+      }
+    }
   }
 
   canSave() {
