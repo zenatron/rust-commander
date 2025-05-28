@@ -9,8 +9,8 @@ export class UIManager {
     this.commandManager = null;
 
     this.initializeResizeHandle();
-    this.loadedPaletteName = ""; // Added to store current palette name
-    this.palettes = []; // Added to store the list of palettes
+    this.loadedPaletteName = "";
+    this.palettes = [];
   }
 
   // Set command manager reference
@@ -71,7 +71,6 @@ export class UIManager {
       const tabButton = document.createElement("div");
       tabButton.classList.add("tab");
       tabButton.textContent = key;
-      // tabButton.dataset.tabKey = key; // Not strictly needed if using textContent for activateTab
       tabContainer.appendChild(tabButton);
 
       const tabContent = document.createElement("div");

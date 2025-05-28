@@ -7,13 +7,16 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0; margin-bottom: 10px;">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-top: 0; margin-bottom: 10px;">
       <div style="display: flex; align-items: flex-start; flex-direction: row;">
         <div style="margin-right: 10px;">
           <h2 style="margin-bottom: 0px; margin-top: 0;">Commander</h2>
           <p id="projectVersion" style="font-size: 0.75em; color: #888; margin: 0; line-height: 1;">v0.1.0</p>
         </div>
-        <input type="file" id="commandFileUpload" accept=".json" style="display: none;" />
+        <a href="https://github.com/zenatron/rust-commander" target="_blank" rel="noopener noreferrer">
+          <button type="button" id="helpButton" title="Get Help">❓</button>
+        </a>
+        <!-- <input type="file" id="commandFileUpload" accept=".json" style="display: none;" /> -->
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end;">
         <div id="header-controls">
@@ -94,11 +97,11 @@
         <div id="messagesContainer">
           <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
             <label for="messagesDisplay" style="font-weight: bold; margin-bottom: 0;">Messages:</label>
-            <span class="message-sent-legend"> (sent)</span>
-            <span class="message-received-legend"> (received)</span>
-            <span class="message-system_info-legend"> (info)</span>
-            <span class="message-system_warn-legend"> (warning)</span>
-            <span class="message-system_error-legend"> (error)</span>
+            <span class="message-sent-legend">(sent)</span>
+            <span class="message-received-legend">(received)</span>
+            <span class="message-system_info-legend">(info)</span>
+            <span class="message-system_warn-legend">(warning)</span>
+            <span class="message-system_error-legend">(error)</span>
             <button type="button" id="sortMessagesButton" title="Sort messages" style="padding: 2px 5px; font-size: 0.8em; margin-left: auto;">Sort Newest First</button>
           </div>
           <pre id="messagesDisplay"></pre>

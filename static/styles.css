@@ -347,12 +347,11 @@ pre#messagesDisplay {
 }
 
 .json-toggle {
-    padding: 3px 3px;
-    font-size: 0.7em;
+    padding: 0px 3px;
     background-color: #e9ecef;
     color: #495057;
     border: 1px solid #ced4da;
-    border-radius: 5px;
+    border-radius: 3px;
     cursor: pointer;
 }
 
@@ -433,6 +432,7 @@ pre#messagesDisplay {
     flex-grow: 1;
 }
 
+/** // TODO: REMOVE IF NOT USED
 .palette-button {
     padding: 5px 10px;
     border: 1px solid #ccc;
@@ -464,27 +464,21 @@ pre#messagesDisplay {
 .palette-button.danger-button:hover {
     background-color: #da190b;
 }
+*/
 
 /* End Palette Management Controls */
 
 /* Styles for Palette Icon Buttons */
+#helpButton,
 #createPaletteButton, 
 #savePaletteButton, 
 #editPaletteButton, 
-#uploadCommandFileButton {
-    font-size: 1.1em;
-    padding: 6px 10px;
-    background-color: #f0f0f0;
-    color: #333;
-    border: 1px solid #ccc;
-    line-height: 1.2;
-}
-
+#uploadCommandFileButton,
 #deletePaletteButton {
     font-size: 1.1em;
-    padding: 6px 10px;
+    padding: 6px 8px;
     background-color: #f0f0f0;
-    color: #d9534f;
+    color: #333;
     border: 1px solid #ccc;
     line-height: 1.2;
 }
