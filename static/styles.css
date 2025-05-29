@@ -2,6 +2,10 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
 }
 .tab-container {
     display: flex;
@@ -9,6 +13,7 @@ body {
     overflow-x: auto;
     white-space: nowrap;
     border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
 }
 .tab { 
     padding: 10px 15px; 
@@ -81,7 +86,7 @@ input[type="text"]:focus {
     display: flex;
     margin-top: 10px;
     flex-grow: 1;
-    overflow: hidden;
+    min-height: 0;
 }
 
 #tabContentContainer {
@@ -91,6 +96,7 @@ input[type="text"]:focus {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    max-height: 60vh;
 }
 
 .tab-content { 
@@ -98,11 +104,18 @@ input[type="text"]:focus {
     padding: 10px; 
 }
 .tab-content.active { 
-    display: block;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+}
+.command-list { 
+    list-style-type: none; 
+    padding: 0; 
+    margin: 0; 
     flex-grow: 1;
     overflow-y: auto;
 }
-.command-list { list-style-type: none; padding: 0; margin: 0; }
 .command-list li { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
 .command-list li:hover { background-color: #f9f9f9; }
 
@@ -111,9 +124,9 @@ input[type="text"]:focus {
     padding-left: 20px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     box-sizing: border-box;
     box-shadow: -2px 0 5px -2px rgba(0,0,0,0.1);
+    min-height: 0;
 }
 
 #jsonDisplayAreasContainer {
@@ -125,6 +138,7 @@ input[type="text"]:focus {
     border-radius: 5px;
     background-color: #fdfdfd;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    flex-shrink: 0;
 }
 #jsonDisplayAreasContainer > div {
     flex: 1;
@@ -273,8 +287,10 @@ pre#filledJsonDisplay {
     margin-top: 10px;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    min-height: 0;
+    height: 300px;
+    min-height: 200px;
+    max-height: 400px;
+    flex-shrink: 0;
 }
 
 pre#messagesDisplay {
@@ -288,6 +304,7 @@ pre#messagesDisplay {
     font-size: 0.9em;
     white-space: pre-wrap;
     word-break: break-all;
+    min-height: 0;
 }
 
 /* Message styling - base properties */
@@ -301,8 +318,11 @@ pre#messagesDisplay {
 }
 
 /* Legend styling - base properties */
-.message-sent-legend, .message-received-legend, 
-.message-system_info-legend, .message-system_warn-legend, .message-system_error-legend {
+.message-sent-legend, 
+.message-received-legend, 
+.message-system_info-legend, 
+.message-system_warn-legend, 
+.message-system_error-legend {
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 0.85em;
@@ -390,12 +410,13 @@ pre#messagesDisplay {
 }
 
 /* Palette Management Controls */
-.palette-controls-container {
+#palette-controls-container {
     background-color: #f9f9f9;
     padding: 15px;
     margin-bottom: 15px;
     border: 1px solid #e0e0e0;
     border-radius: 5px;
+    flex-shrink: 0;
 }
 
 .palette-controls-container h3 {

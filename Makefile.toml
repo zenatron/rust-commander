@@ -1,23 +1,27 @@
 # Linux
 [tasks.build-linux]
 description = "Build for Linux"
-command = "cargo"
-args = ["build", "--target", "x86_64-unknown-linux-gnu"]
+script = [
+    "rustup target add x86_64-unknown-linux-gnu",
+    "cargo build --target x86_64-unknown-linux-gnu"
+]
 
 [tasks.build-release-linux]
 description = "Build for Linux with release profile"
-command = "cargo"
-args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release"]
+script = [
+    "rustup target add x86_64-unknown-linux-gnu",
+    "cargo build --target x86_64-unknown-linux-gnu --release"
+]
 
 [tasks.rename-release-linux]
 description = "Rename Linux release binary with version"
+dependencies = ["build-release-linux"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
     mv target/x86_64-unknown-linux-gnu/release/rust-commander target/x86_64-unknown-linux-gnu/release/rust-commander-linux-$version || true
     '''
 ]
-dependencies = ["build-release-linux"]
 
 # # Windows (MSVC)
 # [tasks.build-windows]
@@ -40,16 +44,21 @@ dependencies = ["build-release-linux"]
 # Windows (GNU)
 [tasks.build-windows]
 description = "Build for Windows"
-command = "cargo"
-args = ["build", "--target", "x86_64-pc-windows-gnu"]
+script = [
+    "rustup target add x86_64-pc-windows-gnu",
+    "cargo build --target x86_64-pc-windows-gnu"
+]
 
 [tasks.build-release-windows]
 description = "Build for Windows with release profile"
-command = "cargo"
-args = ["build", "--target", "x86_64-pc-windows-gnu", "--release"]
+script = [
+    "rustup target add x86_64-pc-windows-gnu",
+    "cargo build --target x86_64-pc-windows-gnu --release"
+]
 
 [tasks.rename-release-windows]
 description = "Rename Windows release binary with version"
+dependencies = ["build-release-windows"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
@@ -57,7 +66,6 @@ script = [
     '''
     # "powershell -ExecutionPolicy Bypass -File scripts\\rename-release-windows.ps1" # not needed for WSL (GNU)
 ]
-dependencies = ["build-release-windows"]
 
 # Linux and Windows (release)
 [tasks.rename-release-all]
