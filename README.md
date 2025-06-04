@@ -2,7 +2,7 @@
 
 ## About
 
-Rust Commander is a program that allows sending JSON commands to connected devices through TCP using websockets. 
+Rust Commander is a program that allows sending JSON commands to connected devices through TCP using websockets.
 The program creates a web server on the computer running it, allowing access to the web UI on port 8080.
 From the UI, the user can connect to target devices [IP:PORT] and send JSON commands from a predefined JSON file.
 
@@ -47,7 +47,7 @@ The following options are available for working with palettes:
 
 ### Navigating Commands
 
-After clicking on a command, it will appear on the right, both under "Raw JSON (Template)" and "Filled JSON (to Send)." Clicking the plus icon for each of those sections will toggle between compact and expanded JSON view. 
+After clicking on a command, it will appear on the right, both under "Raw JSON (Template)" and "Filled JSON (to Send)." Clicking the plus icon for each of those sections will toggle between compact and expanded JSON view.
 
 Some commands will have variable fields that will need to be filled in before the command may be sent. Input fields automatically get created for such variables. If there are no variables, it will state "No variables to fill for this command."
 
@@ -81,9 +81,9 @@ Press Send. This will send the filled in JSON command and the appended delimiter
 
 ### Saving Commands
 
-Commands can be saved to be used later. This is especially useful when handling commands with variables. To save a command, click "Save Command." A modal will appear, with options to save the command to an existing palette or create a new palette. Enter the command name, and select a palette to save to, or click "Create New Palette" and specify the new name of the palette. 
+Commands can be saved to be used later. This is especially useful when handling commands with variables. To save a command, click "Save Command." A modal will appear, with options to save the command to an existing palette or create a new palette. Enter the command name, and select a palette to save to, or click "Create New Palette" and specify the new name of the palette.
 
-Commands will save under a "Saved Commands" category/tab in the target palette. 
+Commands will save under a "Saved Commands" category/tab in the target palette.
 
 If creating a new palette, it will be created in the palettes directory [mentioned previously](#palette-selection).
 
@@ -97,7 +97,7 @@ The messages pane is a key component of the Commander. This is where all system 
 
 Messages can be sorted _Newest First_, which will display newest messages at the top. The default sort is _Oldest First_. Messages are classifed as follows:
 
-- **SENT:** JSON payload that is sent ***to*** the device, light blue colored
+- **SENT:** JSON payload that is sent ***_to_*** the device, light blue colored
 - **RECEIVED:** JSON payload received ***from*** the device, light green colored
 - **SYSTEM_INFO:** Lowest tier of system messages, informative, light gray colored
 - **SYSTEM_WARN:** System warnings, requiring action, yellow colored
