@@ -50,8 +50,8 @@ export class SaveManager {
     let paletteOptionsHtml = '';
     if (availablePalettes.length > 0) {
       paletteOptionsHtml = `
-        <div style="margin-bottom: 15px;">
-          <label for="paletteSelect" style="display: block; margin-bottom: 5px; font-weight: bold;">Select Palette:</label>
+        <div style="margin-bottom: 10px;">
+          <label for="paletteSelect" style="display: block; margin-bottom: 5px;">Select Palette:</label>
           <select id="paletteSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
             <option value="">-- Select a palette --</option>
             ${availablePalettes.map(palette => `<option value="${this.escapeHtml(palette)}">${this.escapeHtml(palette)}</option>`).join('')}
@@ -63,8 +63,8 @@ export class SaveManager {
     dialog.innerHTML = `
       <h3 style="margin-top: 0;">Save Command to Palette</h3>
       <input type="text" id="modalSaveCommandName" placeholder="Enter command name..." style="width: 95%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em;">
+      <p style="margin-top: 0; margin-bottom: 15px; font-weight: bold;">Choose how you want to save this command:</p>
       ${paletteOptionsHtml}
-      <p style="margin-top: 0; margin-bottom: 15px;">Choose how you want to save this command:</p>
       <div style="display: flex; flex-direction: column; gap: 10px;">
         ${availablePalettes.length > 0 ? `
           <button id="dynamicSaveToExistingPalette" style="padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
@@ -72,11 +72,12 @@ export class SaveManager {
             <small style="opacity: 0.9;">Add this command to the selected palette</small>
           </button>
         ` : ''}
+        <p style="margin-top: 0px; margin-bottom: 0px; text-align: center; font-weight: bold;">OR</p>
         <button id="dynamicSaveToNewPalette" style="padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
           <strong>Create New Palette</strong><br>
           <small style="opacity: 0.9;">Create a new palette with this command</small>
         </button>
-        <button id="dynamicCancelSave" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;">
+        <button id="dynamicCancelSave" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
           Cancel
         </button>
       </div>
