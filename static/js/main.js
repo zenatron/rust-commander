@@ -431,6 +431,16 @@ class App {
         console.warn("[main.js] closeEditModalButton element not found.");
     }
 
+    // Add Category Button in Edit Palette Modal
+    const addCategoryButton = document.getElementById("addCategoryButton");
+    if (addCategoryButton) {
+        addCategoryButton.addEventListener("click", () => {
+            this.uiManager.addNewCategory();
+        });
+    } else {
+        console.warn("[main.js] addCategoryButton element not found.");
+    }
+
     // Send Command (original send button)
     document.getElementById("sendButton").addEventListener("click", async () => {
       if (!this.validateAndSendCommand()) return;

@@ -65,10 +65,11 @@ export class UIManager {
     const topLevelKeys = Object.keys(commandsData);
     topLevelKeys.forEach((key, index) => {
       const nestedCommands = commandsData[key];
-      if (typeof nestedCommands !== 'object' || nestedCommands === null || Object.keys(nestedCommands).length === 0) {
-        console.warn(`Skipping tab ${key} due to invalid or empty nestedCommands`);
-        return; // Skip if not an object or is empty
+      if (typeof nestedCommands !== 'object' || nestedCommands === null) {
+        console.warn(`Skipping tab ${key} due to invalid nestedCommands (not an object or null)`);
+        return; // Skip if not an object or null
       }
+      // Note: Now allowing empty categories to be displayed
 
       const tabButton = document.createElement("div");
       tabButton.classList.add("tab");
@@ -83,46 +84,62 @@ export class UIManager {
       const commandListUL = document.createElement("ul");
       commandListUL.classList.add("command-list");
 
-      for (const commandName in nestedCommands) {
-        if (nestedCommands.hasOwnProperty(commandName)) {
-          const commandData = nestedCommands[commandName];
-          const listItem = document.createElement("li");
-          listItem.textContent = commandName;
-          // Store the actual command object or its JSON string. Storing object directly is fine if not too large.
-          // For consistency with previous patterns and explicit data handling:
-          try {
-            listItem.dataset.commandJsonString = JSON.stringify(commandData);
-            
-            // Store detailed command info for reliable tracking
-            const commandInfo = {
-              paletteName: this.getCurrentPaletteName(),
-              categoryName: key,
-              commandName: commandName,
-              commandData: commandData
-            };
-            listItem.dataset.commandInfo = JSON.stringify(commandInfo);
-          } catch (e) {
-            console.error("Error stringifying command data for palette:", commandName, commandData, e);
-            // Skip adding this command if it can't be stringified
-            continue;
-          }
-
-
-          listItem.addEventListener("click", (e) => {
-            const cmdJsonString = e.target.dataset.commandJsonString;
-            const commandInfoString = e.target.dataset.commandInfo;
-            
-            if (cmdJsonString && commandInfoString) {
-               // Update active command highlighting and store command info
-              this.setActiveCommand(e.target, JSON.parse(commandInfoString));
-               // The app instance (window.commanderApp) will handle this
-              window.commanderApp.handleCommandSelection(cmdJsonString);
-            } else {
-              console.error("Command data not found on list item", e.target);
-              this.showResponse("Error: Could not load selected command details.", true, "system_error");
+      const commandNames = Object.keys(nestedCommands);
+      
+      if (commandNames.length === 0) {
+        // Display message for empty categories
+        const emptyMessage = document.createElement("li");
+        emptyMessage.className = "no-commands-message";
+        emptyMessage.textContent = "Empty category ☹️";
+        emptyMessage.style.fontStyle = "italic";
+        emptyMessage.style.color = "#6c757d";
+        emptyMessage.style.textAlign = "center";
+        emptyMessage.style.padding = "20px";
+        emptyMessage.style.cursor = "default";
+        commandListUL.appendChild(emptyMessage);
+      } else {
+        // Populate with actual commands
+        for (const commandName in nestedCommands) {
+          if (nestedCommands.hasOwnProperty(commandName)) {
+            const commandData = nestedCommands[commandName];
+            const listItem = document.createElement("li");
+            listItem.textContent = commandName;
+            // Store the actual command object or its JSON string. Storing object directly is fine if not too large.
+            // For consistency with previous patterns and explicit data handling:
+            try {
+              listItem.dataset.commandJsonString = JSON.stringify(commandData);
+              
+              // Store detailed command info for reliable tracking
+              const commandInfo = {
+                paletteName: this.getCurrentPaletteName(),
+                categoryName: key,
+                commandName: commandName,
+                commandData: commandData
+              };
+              listItem.dataset.commandInfo = JSON.stringify(commandInfo);
+            } catch (e) {
+              console.error("Error stringifying command data for palette:", commandName, commandData, e);
+              // Skip adding this command if it can't be stringified
+              continue;
             }
-          });
-          commandListUL.appendChild(listItem);
+
+
+            listItem.addEventListener("click", (e) => {
+              const cmdJsonString = e.target.dataset.commandJsonString;
+              const commandInfoString = e.target.dataset.commandInfo;
+              
+              if (cmdJsonString && commandInfoString) {
+                 // Update active command highlighting and store command info
+                this.setActiveCommand(e.target, JSON.parse(commandInfoString));
+                 // The app instance (window.commanderApp) will handle this
+                window.commanderApp.handleCommandSelection(cmdJsonString);
+              } else {
+                console.error("Command data not found on list item", e.target);
+                this.showResponse("Error: Could not load selected command details.", true, "system_error");
+              }
+            });
+            commandListUL.appendChild(listItem);
+          }
         }
       }
       tabContent.appendChild(commandListUL);
@@ -604,15 +621,193 @@ export class UIManager {
   }
 
   // Modal handling for palette editor
-  showEditPaletteModal(paletteContent) {
+  showEditPaletteModal(paletteData) {
     const modal = document.getElementById("editPaletteModal");
-    const textarea = document.getElementById("paletteEditorTextarea");
-    if (modal && textarea) {
-      textarea.value = paletteContent;
-      modal.style.display = "block";
-    } else {
-      console.error("Edit palette modal or textarea not found.");
+    if (!modal) {
+      console.error("Edit palette modal not found.");
+      return;
     }
+
+    // Parse the palette data if it's a string
+    let commandsData;
+    try {
+      commandsData = typeof paletteData === 'string' ? JSON.parse(paletteData) : paletteData;
+    } catch (e) {
+      console.error("Invalid palette data:", e);
+      this.showResponse("Error: Invalid palette data format.", true, "system_error");
+      return;
+    }
+
+    // Store the palette data for later use
+    this.editingPaletteData = commandsData;
+    
+    // Create the tabbed interface
+    this.createPaletteEditorTabs(commandsData);
+    
+    modal.style.display = "block";
+  }
+
+  createPaletteEditorTabs(commandsData) {
+    const tabsContainer = document.getElementById("paletteEditorTabs");
+    const contentContainer = document.getElementById("paletteEditorContent");
+
+    if (!tabsContainer || !contentContainer) {
+      console.error("Palette editor containers not found.");
+      return;
+    }
+
+    // Clear existing content
+    tabsContainer.innerHTML = "";
+    contentContainer.innerHTML = "";
+
+    // Create tabs for each category
+    const categories = Object.keys(commandsData);
+    let firstTab = true;
+
+    categories.forEach((categoryName, index) => {
+      // Create tab button
+      const tab = document.createElement("div");
+      tab.className = `palette-editor-tab ${firstTab ? 'active' : ''}`;
+      tab.dataset.category = categoryName;
+      
+      const tabLabel = document.createElement("span");
+      tabLabel.textContent = categoryName;
+      tab.appendChild(tabLabel);
+
+      // Add delete button for category (except for first category)
+      if (categories.length > 1) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-category-btn";
+        deleteBtn.textContent = "×";
+        deleteBtn.title = `Delete "${categoryName}" category`;
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          this.deleteCategory(categoryName);
+        };
+        tab.appendChild(deleteBtn);
+      }
+
+      tab.onclick = () => this.activatePaletteEditorTab(categoryName);
+      tabsContainer.appendChild(tab);
+
+      // Create tab content
+      const tabContent = document.createElement("div");
+      tabContent.className = `palette-editor-tab-content ${firstTab ? 'active' : ''}`;
+      tabContent.dataset.category = categoryName;
+
+      // Category controls
+      const controls = document.createElement("div");
+      controls.className = "palette-editor-category-controls";
+      controls.innerHTML = `
+        <label>Category Name:</label>
+        <input type="text" id="categoryName_${index}" value="${this.escapeHtml(categoryName)}" placeholder="Category name">
+        <button type="button" class="btn-secondary" onclick="window.commanderApp.uiManager.renameCategoryFromInput('${categoryName}', 'categoryName_${index}')">Rename</button>
+      `;
+      tabContent.appendChild(controls);
+
+      // JSON editor for this category
+      const textarea = document.createElement("textarea");
+      textarea.className = "palette-editor-textarea";
+      textarea.dataset.category = categoryName;
+      textarea.placeholder = "Enter JSON commands for this category...";
+      textarea.value = JSON.stringify(commandsData[categoryName] || {}, null, 2);
+      tabContent.appendChild(textarea);
+
+      contentContainer.appendChild(tabContent);
+      firstTab = false;
+    });
+  }
+
+  activatePaletteEditorTab(categoryName) {
+    // Remove active class from all tabs and contents
+    document.querySelectorAll('.palette-editor-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.palette-editor-tab-content').forEach(content => content.classList.remove('active'));
+
+    // Add active class to selected tab and content
+    const activeTab = document.querySelector(`[data-category="${categoryName}"]`);
+    const activeContent = document.querySelector(`.palette-editor-tab-content[data-category="${categoryName}"]`);
+    
+    if (activeTab) activeTab.classList.add('active');
+    if (activeContent) activeContent.classList.add('active');
+  }
+
+  deleteCategory(categoryName) {
+    if (!confirm(`Are you sure you want to delete the "${categoryName}" category and all its commands?`)) {
+      return;
+    }
+
+    // Remove from editing data
+    if (this.editingPaletteData && this.editingPaletteData[categoryName]) {
+      delete this.editingPaletteData[categoryName];
+    }
+
+    // Recreate the interface
+    this.createPaletteEditorTabs(this.editingPaletteData);
+    
+    this.showResponse(`Category "${categoryName}" deleted.`, false, "system_info");
+  }
+
+  renameCategoryFromInput(oldCategoryName, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const newCategoryName = input.value.trim();
+    if (!newCategoryName) {
+      this.showResponse("Category name cannot be empty.", false, "system_warn");
+      return;
+    }
+
+    if (newCategoryName === oldCategoryName) {
+      return; // No change
+    }
+
+    if (this.editingPaletteData && this.editingPaletteData[newCategoryName]) {
+      this.showResponse("A category with this name already exists.", false, "system_warn");
+      return;
+    }
+
+    this.renameCategory(oldCategoryName, newCategoryName);
+  }
+
+  renameCategory(oldName, newName) {
+    if (!this.editingPaletteData) return;
+
+    // Move the data to the new key
+    this.editingPaletteData[newName] = this.editingPaletteData[oldName];
+    delete this.editingPaletteData[oldName];
+
+    // Recreate the interface
+    this.createPaletteEditorTabs(this.editingPaletteData);
+    
+    // Activate the renamed tab
+    this.activatePaletteEditorTab(newName);
+    
+    this.showResponse(`Category renamed from "${oldName}" to "${newName}".`, false, "system_info");
+  }
+
+  addNewCategory() {
+    const categoryName = prompt("Enter name for the new category:");
+    if (!categoryName || !categoryName.trim()) {
+      return;
+    }
+
+    const trimmedName = categoryName.trim();
+    if (this.editingPaletteData && this.editingPaletteData[trimmedName]) {
+      this.showResponse("A category with this name already exists.", false, "system_warn");
+      return;
+    }
+
+    // Add new empty category
+    if (!this.editingPaletteData) this.editingPaletteData = {};
+    this.editingPaletteData[trimmedName] = {};
+
+    // Recreate the interface
+    this.createPaletteEditorTabs(this.editingPaletteData);
+    
+    // Activate the new tab
+    this.activatePaletteEditorTab(trimmedName);
+    
+    this.showResponse(`Category "${trimmedName}" added.`, false, "system_info");
   }
 
   hideEditPaletteModal() {
@@ -620,10 +815,30 @@ export class UIManager {
     if (modal) {
       modal.style.display = "none";
     }
+    // Clean up stored data
+    this.editingPaletteData = null;
   }
 
   getPaletteEditorContent() {
-    const textarea = document.getElementById("paletteEditorTextarea");
-    return textarea ? textarea.value : null;
+    if (!this.editingPaletteData) {
+      return null;
+    }
+
+    // Collect data from all textareas
+    const result = {};
+    const textareas = document.querySelectorAll('.palette-editor-textarea');
+    
+    for (const textarea of textareas) {
+      const categoryName = textarea.dataset.category;
+      try {
+        const categoryData = JSON.parse(textarea.value.trim() || '{}');
+        result[categoryName] = categoryData;
+      } catch (e) {
+        this.showResponse(`Invalid JSON in category "${categoryName}". Please check the syntax.`, false, "system_error");
+        return null;
+      }
+    }
+
+    return JSON.stringify(result);
   }
 }

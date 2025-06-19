@@ -110,13 +110,23 @@
     </div>
 
     <div id="editPaletteModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-content palette-editor-modal">
         <span class="close-button" id="closeEditModal">&times;</span>
         <h3>Edit Palette</h3>
-        <textarea id="paletteEditorTextarea" rows="20" style="width: 95%;"></textarea>
-        <div style="margin-top: 10px;">
-          <button type="button" id="savePaletteChangesButton">Save Changes</button>
-          <button type="button" id="cancelEditPaletteButton">Cancel</button>
+        <div class="palette-editor-container">
+          <div class="palette-editor-tabs" id="paletteEditorTabs">
+            <!-- Tabs will be dynamically generated here -->
+          </div>
+          <div class="palette-editor-content" id="paletteEditorContent">
+            <!-- Tab content will be dynamically generated here -->
+          </div>
+        </div>
+        <div class="palette-editor-actions">
+          <div class="primary-actions">
+            <button type="button" id="savePaletteChangesButton">Save Changes</button>
+            <button type="button" id="cancelEditPaletteButton">Cancel</button>
+          </div>
+          <button type="button" id="addCategoryButton" class="btn-secondary">+ Add Category</button>
         </div>
       </div>
     </div>
