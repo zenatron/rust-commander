@@ -177,7 +177,7 @@ export class SaveManager {
         if (window.commanderApp.uiManager && typeof window.commanderApp.uiManager.setSelectedPalette === 'function') {
           window.commanderApp.uiManager.setSelectedPalette(paletteName);
         }
-        await window.commanderApp.loadPalette(paletteName);
+        await window.commanderApp.loadPalette(paletteName, true);
       }
       
       return { success: true, result };

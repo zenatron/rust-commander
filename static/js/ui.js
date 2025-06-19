@@ -7,6 +7,8 @@ export class UIManager {
     this.isRawJsonExpanded = false;
     this.isFilledJsonExpanded = false;
     this.commandManager = null;
+    this.activeCommandElement = null; // Track the currently active command element
+    this.currentCommandInfo = null; // Store detailed info about selected command
 
     this.initializeResizeHandle();
     this.loadedPaletteName = "";
@@ -29,7 +31,7 @@ export class UIManager {
   }
 
   // Command palette functionality - create tabs and command lists
-  populateCommandPalette(commandsData) {
+  populateCommandPalette(commandsData, skipAutoActivation = false) {
     const tabContainer = document.getElementById("tabContainer");
     const tabContentContainer = document.getElementById("tabContentContainer");
 
@@ -90,6 +92,15 @@ export class UIManager {
           // For consistency with previous patterns and explicit data handling:
           try {
             listItem.dataset.commandJsonString = JSON.stringify(commandData);
+            
+            // Store detailed command info for reliable tracking
+            const commandInfo = {
+              paletteName: this.getCurrentPaletteName(),
+              categoryName: key,
+              commandName: commandName,
+              commandData: commandData
+            };
+            listItem.dataset.commandInfo = JSON.stringify(commandInfo);
           } catch (e) {
             console.error("Error stringifying command data for palette:", commandName, commandData, e);
             // Skip adding this command if it can't be stringified
@@ -99,11 +110,15 @@ export class UIManager {
 
           listItem.addEventListener("click", (e) => {
             const cmdJsonString = e.target.dataset.commandJsonString;
-            if (cmdJsonString) {
+            const commandInfoString = e.target.dataset.commandInfo;
+            
+            if (cmdJsonString && commandInfoString) {
+               // Update active command highlighting and store command info
+              this.setActiveCommand(e.target, JSON.parse(commandInfoString));
                // The app instance (window.commanderApp) will handle this
               window.commanderApp.handleCommandSelection(cmdJsonString);
             } else {
-              console.error("Command JSON string not found on list item", e.target);
+              console.error("Command data not found on list item", e.target);
               this.showResponse("Error: Could not load selected command details.", true, "system_error");
             }
           });
@@ -112,7 +127,7 @@ export class UIManager {
       }
       tabContent.appendChild(commandListUL);
 
-      if (!firstTabInitialized && index === 0) {
+      if (!firstTabInitialized && index === 0 && !skipAutoActivation) {
         // Use the activateTab method to ensure consistency
         this.activateTab(tabButton, key);
         firstTabInitialized = true;
@@ -432,6 +447,31 @@ export class UIManager {
     });
   }
 
+  // Set active command highlighting
+  setActiveCommand(commandElement, commandInfo = null) {
+    // Remove active class from previously active command
+    if (this.activeCommandElement) {
+      this.activeCommandElement.classList.remove('active');
+    }
+    
+    // Set new active command
+    this.activeCommandElement = commandElement;
+    this.currentCommandInfo = commandInfo;
+    
+    if (commandElement) {
+      commandElement.classList.add('active');
+    }
+  }
+
+  // Clear active command highlighting
+  clearActiveCommand() {
+    if (this.activeCommandElement) {
+      this.activeCommandElement.classList.remove('active');
+      this.activeCommandElement = null;
+    }
+    this.currentCommandInfo = null;
+  }
+
   // Clear the command palette display (tabs and content)
   clearCommandPalette() {
     const tabContainer = document.getElementById("tabContainer");
@@ -445,6 +485,9 @@ export class UIManager {
     if (rawJsonDisplayElement) rawJsonDisplayElement.innerHTML = "";
     if (filledJsonDisplayElement) filledJsonDisplayElement.innerHTML = "";
     if (variableInputsContainer) variableInputsContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
+    
+    // Clear active command highlighting
+    this.clearActiveCommand();
     
     // Also clear current command selection in commandManager if it exists
     if (this.commandManager) {
@@ -504,6 +547,60 @@ export class UIManager {
         return selector.value;
     }
     return this.loadedPaletteName; // Fallback or primary source
+  }
+
+  // Get current command info for edit/delete operations
+  getCurrentCommandInfo() {
+    return this.currentCommandInfo;
+  }
+
+  // Restore command selection by command info after palette reload
+  restoreCommandSelection(commandInfo) {
+    if (!commandInfo) return false;
+    
+    // Find the command element that matches the command info
+    const tabContentId = `tab-${commandInfo.categoryName.replace(/\s+/g, "-")}`;
+    const tabContent = document.getElementById(tabContentId);
+    
+    if (!tabContent) return false;
+    
+    const commandList = tabContent.querySelector('.command-list');
+    if (!commandList) return false;
+    
+    // Find the command item with matching data
+    const commandItems = commandList.querySelectorAll('li');
+    for (const item of commandItems) {
+      const storedInfo = item.dataset.commandInfo;
+      if (storedInfo) {
+        try {
+          const parsedInfo = JSON.parse(storedInfo);
+          if (parsedInfo.commandName === commandInfo.commandName && 
+              parsedInfo.categoryName === commandInfo.categoryName) {
+            // Activate the tab first - find tab by text content
+            const allTabs = document.querySelectorAll('.tab');
+            let tabButton = null;
+            for (const tab of allTabs) {
+              if (tab.textContent.trim() === commandInfo.categoryName) {
+                tabButton = tab;
+                break;
+              }
+            }
+            if (tabButton) {
+              this.activateTab(tabButton, commandInfo.categoryName);
+            }
+            
+            // Set active command and trigger selection
+            this.setActiveCommand(item, parsedInfo);
+            item.click();
+            return true;
+          }
+        } catch (e) {
+          console.error('Error parsing command info:', e);
+        }
+      }
+    }
+    
+    return false;
   }
 
   // Modal handling for palette editor

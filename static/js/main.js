@@ -56,7 +56,7 @@ class App {
     }
   }
 
-  async loadPalette(paletteName) {
+  async loadPalette(paletteName, skipAutoActivation = false) {
     if (!paletteName) {
         this.uiManager.showResponse("No palette specified to load.", true, "system_warn");
         this.uiManager.clearCommandPalette();
@@ -72,7 +72,7 @@ class App {
       
       // Pass only the commands map to populateCommandPalette
       if (commandsData && commandsData.commands) {
-        this.uiManager.populateCommandPalette(commandsData.commands);
+        this.uiManager.populateCommandPalette(commandsData.commands, skipAutoActivation);
       } else {
         // Handle cases where commandsData might not be in the expected format or empty
         console.error("Loaded palette data does not contain a 'commands' map:", commandsData);
