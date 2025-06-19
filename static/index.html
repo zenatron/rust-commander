@@ -91,7 +91,7 @@
         <div id="mainActionButtons" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
           <input type="text" id="commandDelimiterInput" placeholder="Delimiter (e.g., \r, \n)" style="width: 150px; padding: 5px; border: 1px solid #ccc; margin-right: 5px;">
           <button type="button" id="sendButton" title="Send command to connected device" style="padding: 8px 15px;">Send</button>
-          <button type="button" id="saveCommandButton_main" class="btn-save" title="Save the current filled command" style="padding: 8px 15px;">Save Command</button>
+          <button type="button" id="commandOptionsButton_main" class="btn-save" title="Command options: Save, Edit, or Delete" style="padding: 8px 15px;">Command Options</button>
         </div>
 
         <div id="messagesContainer">
@@ -122,5 +122,6 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/command-options.js"></script>
   </body>
 </html>

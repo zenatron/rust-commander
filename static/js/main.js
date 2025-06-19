@@ -3,6 +3,7 @@ import { CommandManager } from './commands.js';
 import { ConnectionManager } from './connection.js';
 import { UIManager } from './ui.js';
 import { SaveManager } from './save.js';
+import { CommandOptionsManager } from './command-options.js';
 
 class App {
   constructor() {
@@ -14,6 +15,7 @@ class App {
       (isConnected) => this.uiManager.updateConnectionStatus(isConnected)
     );
     this.saveManager = new SaveManager(this.commandManager, this.uiManager);
+    this.commandOptionsManager = new CommandOptionsManager(this.commandManager, this.uiManager, this.saveManager);
   }
 
   async initialize() {
@@ -24,13 +26,10 @@ class App {
     
     // Load initial commands (now palettes)
     await this.fetchPalettes(); // Initially fetch all palettes
-    // No longer load a default command file directly, palette selection will handle it
     
     // Setup event listeners
     this.setupEventListeners();
     
-    // Don't establish WebSocket connection automatically
-    // It will be established after successful TCP connection
     
     console.log('Commander app initialized');
   }
@@ -450,10 +449,10 @@ class App {
       }
     });
 
-    // Save Command (main button next to Send)
-    document.getElementById("saveCommandButton_main").addEventListener("click", () => {
+    // Command Options (main button next to Send)
+    document.getElementById("commandOptionsButton_main").addEventListener("click", () => {
       if (!this.validateVariableInputs()) return;
-      this.saveManager.showSaveModal();
+      this.commandOptionsManager.showCommandOptionsModal();
     });
 
     // Sort Messages (original button)

@@ -5,6 +5,8 @@ export class SaveManager {
     this.responseDiv = document.getElementById('response');
   }
 
+
+
   async showSaveModal() {
     const currentCommand = this.commandManager.getCurrentFilledCommand();
     if (!currentCommand) {
@@ -142,6 +144,48 @@ export class SaveManager {
       return false;
     }
     return true;
+  }
+
+  async saveCommandToPalette(commandName, paletteName, commandData) {
+    try {
+      const response = await fetch(`/api/palettes/${paletteName}/commands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          command_name: commandName,
+          command_data: commandData
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        if (response.status === 409) {
+          if (this.responseDiv) this.responseDiv.textContent = errorData.message || 'Command already exists in palette.';
+          return { success: false, error: errorData.message || 'Command already exists' };
+        } else {
+          if (this.responseDiv) this.responseDiv.textContent = `Save error: ${errorData.error || 'Unknown error'}`;
+          return { success: false, error: errorData.error || 'Unknown error' };
+        }
+      }
+
+      const result = await response.json();
+      if (this.responseDiv) this.responseDiv.textContent = `Command '${commandName}' saved to palette '${paletteName}' successfully.`;
+      
+      // Trigger a refresh of the UI if needed (you may want to emit an event here)
+      if (window.commanderApp && typeof window.commanderApp.fetchPalettes === 'function') {
+        await window.commanderApp.fetchPalettes();
+        if (window.commanderApp.uiManager && typeof window.commanderApp.uiManager.setSelectedPalette === 'function') {
+          window.commanderApp.uiManager.setSelectedPalette(paletteName);
+        }
+        await window.commanderApp.loadPalette(paletteName);
+      }
+      
+      return { success: true, result };
+    } catch (error) {
+      console.error('Error saving command:', error);
+      if (this.responseDiv) this.responseDiv.textContent = `Save error: ${error.message}`;
+      return { success: false, error: error.message };
+    }
   }
 
   closeDynamicModal(modalElement, escapeListenerToRemove) {
