@@ -591,6 +591,22 @@ class App {
     this.updateVariableInputs();
     this.uiManager.updateRawJsonDisplay(this.commandManager.getCurrentTemplateCommand());
     this.uiManager.updateFilledJsonDisplay(this.commandManager.getCurrentFilledCommand());
+    
+    // Update the selected command name display
+    this.updateSelectedCommandNameDisplay();
+  }
+  
+  // Update the selected command name in the UI
+  updateSelectedCommandNameDisplay() {
+    const selectedCommandNameElement = document.getElementById("selectedCommandName");
+    if (!selectedCommandNameElement) return;
+    
+    const commandInfo = this.uiManager.getCurrentCommandInfo();
+    if (commandInfo && commandInfo.commandName) {
+      selectedCommandNameElement.textContent = commandInfo.commandName;
+    } else {
+      selectedCommandNameElement.textContent = "No command selected";
+    }
   }
 }
 

@@ -75,16 +75,22 @@
       <div id="formAndResponseArea">
         <div id="jsonDisplayAreasContainer">
           <div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-              <label for="rawJsonDisplay">Raw JSON (Template):</label>
-              <button type="button" id="rawJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
+            <div class="json-header">
+              <span class="selected-command-name" id="selectedCommandName">No command selected</span>
+              <div class="json-header-right">
+                <label for="rawJsonDisplay">Raw JSON (Template):</label>
+                <button type="button" id="rawJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
+              </div>
             </div>
             <pre id="rawJsonDisplay"></pre>
           </div>
           <div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-              <label for="filledJsonDisplay">Filled JSON (to Send):</label>
-              <button type="button" id="filledJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
+            <div class="json-header">
+              <span class="json-spacer"></span>
+              <div class="json-header-right">
+                <label for="filledJsonDisplay">Filled JSON (to Send):</label>
+                <button type="button" id="filledJsonToggle" class="json-toggle" title="Toggle between compact and expanded view">➕</button>
+              </div>
             </div>
             <pre id="filledJsonDisplay"></pre>
           </div>
@@ -97,7 +103,7 @@
         <div id="mainActionButtons" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
           <input type="text" id="commandDelimiterInput" placeholder="Delimiter (e.g., \r, \n)" style="width: 150px; padding: 5px; border: 1px solid #ccc; margin-right: 5px;">
           <button type="button" id="sendButton" title="Send command to connected device" style="padding: 8px 15px;">Send</button>
-          <button type="button" id="commandOptionsButton_main" class="btn-save" title="Command options: Save, Edit, or Delete" style="padding: 8px 15px;">⚙️</button>
+          <button type="button" id="commandOptionsButton_main" class="btn-secondary" title="Command options: Save, Edit, or Delete" style="padding: 8px 8px;">⚙️</button>
         </div>
 
         <div id="messagesContainer">

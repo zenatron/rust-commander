@@ -314,12 +314,22 @@ export class UIManager {
 
     messagesElement.innerHTML = "";
     messagesToShow.forEach((msg) => {
-      const timestamp = msg.timestamp.toLocaleTimeString();
+      const timestamp = msg.timestamp.toLocaleTimeString('en-US', { hour12: false, timeStyle: 'medium' });
       let messageText = msg.content;
       let displayType = msg.type.toUpperCase();
       
-      // Handle message type display
+      // Handle message type display with shorter labels
       if (msg.type === "sent_text") {
+        displayType = "SENT";
+      } else if (msg.type === "received") {
+        displayType = "RECV";
+      } else if (msg.type === "system_info") {
+        displayType = "INFO";
+      } else if (msg.type === "system_warn") {
+        displayType = "WARN";
+      } else if (msg.type === "system_error") {
+        displayType = "ERRO";
+      } else if (msg.type === "sent") {
         displayType = "SENT";
       }
 
@@ -496,12 +506,14 @@ export class UIManager {
     const rawJsonDisplayElement = document.getElementById("rawJsonDisplay");
     const filledJsonDisplayElement = document.getElementById("filledJsonDisplay");
     const variableInputsContainer = document.getElementById("variableInputsContainer");
+    const selectedCommandNameElement = document.getElementById("selectedCommandName");
 
     if (tabContainer) tabContainer.innerHTML = "<p>No palette loaded or palette is empty.</p>";
     if (tabContentContainer) tabContentContainer.innerHTML = "";
     if (rawJsonDisplayElement) rawJsonDisplayElement.innerHTML = "";
     if (filledJsonDisplayElement) filledJsonDisplayElement.innerHTML = "";
     if (variableInputsContainer) variableInputsContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
+    if (selectedCommandNameElement) selectedCommandNameElement.textContent = "No command selected";
     
     // Clear active command highlighting
     this.clearActiveCommand();

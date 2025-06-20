@@ -58,11 +58,11 @@ export class CommandOptionsManager {
         </button>
         <button id="optionEditCommand" style="padding: 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 1em;">
           <strong>✏️ Edit Command</strong><br>
-          <small style="opacity: 0.9;">Modify this command (Coming Soon)</small>
+          <small style="opacity: 0.9;">Modify this command</small>
         </button>
         <button id="optionDeleteCommand" style="padding: 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 1em;">
           <strong>🗑️ Delete Command</strong><br>
-          <small style="opacity: 0.9;">Remove this command (Coming Soon)</small>
+          <small style="opacity: 0.9;">Remove this command</small>
         </button>
         <button id="optionCancel" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;">
           Cancel
@@ -220,11 +220,11 @@ export class CommandOptionsManager {
         </button>
         <button id="optionEditCommand" style="padding: 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 1em;">
           <strong>✏️ Edit Command</strong><br>
-          <small style="opacity: 0.9;">Modify this command (Coming Soon)</small>
+          <small style="opacity: 0.9;">Modify this command</small>
         </button>
         <button id="optionDeleteCommand" style="padding: 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 1em;">
           <strong>🗑️ Delete Command</strong><br>
-          <small style="opacity: 0.9;">Remove this command (Coming Soon)</small>
+          <small style="opacity: 0.9;">Remove this command</small>
         </button>
         <button id="optionCancel" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;">
           Cancel
