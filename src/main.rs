@@ -51,7 +51,7 @@ fn print_setup_message(server_address: &str, server_port: u16) {
     println!(
         "{}",
         format!(
-            "Commander started on {}:{}.",
+            "Commander bound to {}:{}.",
             server_address,
             server_port
         ).green()

@@ -232,6 +232,65 @@ class App {
     }
   }
 
+  // Settings Modal Methods
+  showSettingsModal() {
+    const modal = document.getElementById("settingsModal");
+    if (!modal) {
+      console.error("Settings modal not found.");
+      return;
+    }
+
+    // Update version dynamically from the main version display
+    const projectVersionElem = document.getElementById('projectVersion');
+    const settingsVersionElem = document.getElementById('settingsVersionText');
+    if (projectVersionElem && settingsVersionElem) {
+      // Extract just the version part (remove "Version: " prefix)
+      const versionText = projectVersionElem.textContent.replace('Version: ', '');
+      settingsVersionElem.textContent = versionText;
+    }
+
+    modal.style.display = "block";
+    
+    // Add click outside to close functionality (remove any existing listeners first)
+    const clickOutsideHandler = (e) => {
+      if (e.target === modal) {
+        this.hideSettingsModal();
+        modal.removeEventListener('click', clickOutsideHandler);
+      }
+    };
+    modal.addEventListener('click', clickOutsideHandler);
+
+    // Add escape key to close functionality
+    const escapeKeyListener = (e) => {
+      if (e.key === 'Escape') {
+        this.hideSettingsModal();
+        document.removeEventListener('keydown', escapeKeyListener);
+      }
+    };
+    document.addEventListener('keydown', escapeKeyListener);
+    
+    // Store the listener for cleanup
+    modal._clickHandler = clickOutsideHandler;
+    modal._escapeHandler = escapeKeyListener;
+  }
+
+  hideSettingsModal() {
+    const modal = document.getElementById("settingsModal");
+    if (modal) {
+      modal.style.display = "none";
+      
+      // Clean up event listeners
+      if (modal._clickHandler) {
+        modal.removeEventListener('click', modal._clickHandler);
+        modal._clickHandler = null;
+      }
+      if (modal._escapeHandler) {
+        document.removeEventListener('keydown', modal._escapeHandler);
+        modal._escapeHandler = null;
+      }
+    }
+  }
+
   setupEventListeners() {
     // TCP Connection (using original header element IDs)
     document.getElementById("connectButton_header").addEventListener("click", async () => {
@@ -439,6 +498,25 @@ class App {
         });
     } else {
         console.warn("[main.js] addCategoryButton element not found.");
+    }
+
+    // Settings Modal Event Listeners
+    const settingsButton = document.getElementById("settingsButton");
+    if (settingsButton) {
+        settingsButton.addEventListener("click", () => {
+            this.showSettingsModal();
+        });
+    } else {
+        console.warn("[main.js] settingsButton element not found.");
+    }
+
+    const closeSettingsModalButton = document.getElementById("closeSettingsModal");
+    if (closeSettingsModalButton) {
+        closeSettingsModalButton.addEventListener("click", () => {
+            this.hideSettingsModal();
+        });
+    } else {
+        console.warn("[main.js] closeSettingsModal element not found.");
     }
 
     // Send Command (original send button)

@@ -484,66 +484,42 @@ pre#messagesDisplay {
 .palette-file-input {
     flex-grow: 1;
 }
-
-/** // TODO: REMOVE IF NOT USED
-.palette-button {
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    background-color: #efefef;
-    cursor: pointer;
-    border-radius: 3px;
-}
-
-.palette-button:hover {
-    background-color: #e0e0e0;
-}
-
-.palette-button.action-button {
-    background-color: #4CAF50;
-    color: white;
-    border-color: #4CAF50;
-}
-
-.palette-button.action-button:hover {
-    background-color: #45a049;
-}
-
-.palette-button.danger-button {
-    background-color: #f44336;
-    color: white;
-    border-color: #f44336;
-}
-
-.palette-button.danger-button:hover {
-    background-color: #da190b;
-}
-*/
-
 /* End Palette Management Controls */
 
-/* Styles for Palette Icon Buttons */
-#helpButton,
-#createPaletteButton, 
-#savePaletteButton, 
-#editPaletteButton, 
+/* Styles for Icon Buttons */
+#settingsButton,
+#savePaletteButton:disabled,
+#editPaletteButton:disabled,
+#deletePaletteButton:disabled,
+#createPaletteButton,
 #uploadCommandFileButton,
+#savePaletteButton,
+#editPaletteButton,
 #deletePaletteButton {
-    font-size: 1.1em;
-    padding: 6px 8px;
-    background-color: #f0f0f0;
-    color: #333;
-    border: 1px solid #ccc;
-    line-height: 1.2;
+    min-width: 35px;
+    height: 35px;
+    padding: 5px;
+    margin: 2px;
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 16px;
+    text-align: center;
+    transition: all 0.15s ease-in-out;
 }
 
-/* Hover states for new icon buttons */
+#settingsButton:hover,
 #createPaletteButton:hover,
-#savePaletteButton:hover,
-#editPaletteButton:hover,
 #uploadCommandFileButton:hover,
-#deletePaletteButton:hover {
-    background-color: #e0e0e0;
-    border-color: #bbb;
+#savePaletteButton:hover:not(:disabled),
+#editPaletteButton:hover:not(:disabled),
+#deletePaletteButton:hover:not(:disabled) {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    color: #495057;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Modal Basic Styling */
@@ -747,4 +723,146 @@ pre#messagesDisplay {
 
 .btn-danger:hover {
     background-color: #c82333;
+}
+
+/* Settings Modal Styles - macOS "About this Mac" inspired */
+.settings-modal {
+    max-width: 400px;
+    min-height: 500px;
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    background: #ffffff;
+    border: 1px solid #ddd;
+    position: relative;
+    overflow: hidden;
+}
+
+.settings-modal .close-button {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    font-size: 20px;
+    color: #666;
+    z-index: 10;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.settings-modal .close-button:hover {
+    color: #333;
+}
+
+.settings-modal-content {
+    text-align: center;
+    padding: 30px 25px 25px;
+    color: #333;
+}
+
+.settings-icon {
+    margin: 0 auto 15px;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.settings-icon img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+.settings-title {
+    font-size: 2.2em;
+    font-weight: 300;
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    letter-spacing: -1px;
+}
+
+.settings-version {
+    font-size: 1.0em;
+    color: #7f8c8d;
+    margin: 0 0 25px 0;
+    font-weight: 400;
+}
+
+.settings-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.settings-section h3 {
+    font-size: 1.1em;
+    margin: 0 0 12px 0;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.settings-section p {
+    margin: 6px 0;
+    color: #34495e;
+    line-height: 1.4;
+    font-size: 0.95em;
+}
+
+.settings-author {
+    color: #7f8c8d !important;
+    font-size: 0.9em;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.settings-help-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.settings-link-button {
+    background: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.settings-link-button:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.settings-info p {
+    text-align: left;
+    margin: 8px 0;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-size: 0.9em;
+}
+
+.settings-info p:last-child {
+    border-bottom: none;
+}
+
+.settings-info strong {
+    color: #2c3e50;
+    font-weight: 600;
+    display: inline-block;
+    width: 85px;
 }
