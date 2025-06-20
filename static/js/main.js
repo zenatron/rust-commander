@@ -454,17 +454,30 @@ class App {
       savePaletteChangesButton.addEventListener("click", async () => {
         const currentPaletteName = this.uiManager.getCurrentPaletteName(); // Ensure this reflects the palette being edited
         const newPaletteContent = this.uiManager.getPaletteEditorContent();
-        if (!newPaletteContent) {
-            this.uiManager.showResponse("Palette content cannot be empty.", true, "system_warn");
+        
+        if (newPaletteContent === null) {
+            // A null return from getPaletteEditorContent means an error (like invalid JSON)
+            // has already been shown to the user from the UIManager, so we just stop.
             return;
         }
+
+        let commands;
         try {
-            // Validate if newPaletteContent is valid JSON before sending
-            JSON.parse(newPaletteContent);
+            // The content from the editor is a string, parse it to an object.
+            commands = JSON.parse(newPaletteContent);
         } catch (e) {
+            // This is a fallback, but getPaletteEditorContent should have caught this.
             this.uiManager.showResponse("Invalid JSON format in editor.", true, "system_error");
             return;
         }
+
+        // Check if the resulting command object is empty.
+        if (Object.keys(commands).length === 0) {
+            this.uiManager.showResponse("Palette content cannot be empty.", true, "system_warn");
+            return;
+        }
+
+        // If all checks pass, save the changes.
         await this.savePaletteChanges(currentPaletteName, newPaletteContent);
         this.uiManager.hideEditPaletteModal();
       });
