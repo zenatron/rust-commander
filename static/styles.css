@@ -38,6 +38,7 @@ body {
     background-color: #e7f3ff;
     color: #0056b3;
     border-color: #dee2e6 #dee2e6 #e7f3ff;
+    border-top: 3px solid #007bff;
     border-bottom: 1px solid #e7f3ff;
     margin-bottom: -1px;
     font-weight: 600;
@@ -119,8 +120,17 @@ input[type="text"]:focus {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
-.command-list li { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
-.command-list li:hover { background-color: #f9f9f9; }
+.command-list li { 
+    padding: 8px 12px; 
+    cursor: pointer; 
+    border-bottom: 1px solid #d6d6d6; 
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+.command-list li:hover { 
+    background-color: #e9ecef;
+    border-color: #e9ecef #e9ecef transparent;
+    color: #007bff;
+}
 .command-list li.active { 
     background-color: #e7f3ff; 
     border-left: 3px solid #007bff; 
