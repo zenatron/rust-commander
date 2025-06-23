@@ -488,7 +488,7 @@ class App {
     const cancelEditPaletteButton = document.getElementById("cancelEditPaletteButton");
     if (cancelEditPaletteButton) {
       cancelEditPaletteButton.addEventListener("click", () => {
-        this.uiManager.hideEditPaletteModal();
+        this.uiManager.attemptHideEditPaletteModal();
       });
     } else {
         console.warn("[main.js] cancelEditPaletteButton element not found.");
@@ -497,7 +497,7 @@ class App {
     const closeEditModalButton = document.getElementById("closeEditModal");
     if (closeEditModalButton) {
         closeEditModalButton.addEventListener("click", () => {
-            this.uiManager.hideEditPaletteModal();
+            this.uiManager.attemptHideEditPaletteModal();
         });
     } else {
         console.warn("[main.js] closeEditModalButton element not found.");
