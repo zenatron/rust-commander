@@ -940,6 +940,11 @@ pre#messagesDisplay {
     #jsonDisplayAreasContainer {
         max-width: 95vw;
         padding: 10px;
+        max-height: 50vh;
+    }
+
+    #variableInputsContainer {
+        min-height: 50px;
     }
     
     #messagesContainer {
