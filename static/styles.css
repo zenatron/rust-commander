@@ -177,6 +177,9 @@ input[type="text"]:focus {
     flex-shrink: 0;
     max-width: 65vw;
     overflow-x: auto;
+    max-width: 95vw;
+    padding: 10px;
+    max-height: 50vh;
 }
 
 .json-header {
@@ -293,6 +296,7 @@ pre#filledJsonDisplay {
     display: flex; 
     flex-wrap: wrap;
     gap: 10px;
+    min-height: 50px;
 }
 .variable-input-group {
     margin-bottom: 0;
@@ -367,6 +371,7 @@ pre#filledJsonDisplay {
     max-height: 400px;
     flex-shrink: 0;
     max-width: 65vw;
+    max-width: 95vw;
 }
 
 pre#messagesDisplay {
@@ -496,6 +501,8 @@ pre#messagesDisplay {
     border: 1px solid #e0e0e0;
     border-radius: 5px;
     flex-shrink: 0;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .palette-controls-container h3 {
@@ -531,7 +538,10 @@ pre#messagesDisplay {
 .palette-file-input {
     flex-grow: 1;
 }
-/* End Palette Management Controls */
+
+#palette-options-group {
+    flex-wrap: wrap;
+}
 
 /* Styles for Icon Buttons */
 #settingsButton,
@@ -953,5 +963,14 @@ pre#messagesDisplay {
     
     .selected-command-name {
         max-width: 40vw;
+    }
+
+    #palette-controls-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #palette-options-group {
+        flex-wrap: wrap;
     }
 }

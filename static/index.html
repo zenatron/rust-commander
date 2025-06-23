@@ -48,17 +48,20 @@
     </div>
 
     <div id="palette-controls-container" class="palette-controls" style="display: flex; align-items: center; gap: 10px;">
-      <label for="paletteSelector" style="white-space: nowrap; font-weight: bold;">Palette Selection:</label>
-      <select id="paletteSelector" style="max-width: 250px; flex-shrink: 0;"></select>
+      <div id="palette-selection-group" style="display: flex; align-items: center; gap: 10px;">
+        <label for="paletteSelector" style="white-space: nowrap; font-weight: bold;">Palette Selection:</label>
+        <select id="paletteSelector" style="max-width: 250px; flex-shrink: 0;"></select>
+      </div>
 
-      <span id="paletteOptionsLabelText" style="margin-left: 15px; white-space: nowrap; font-weight: bold;">Palette Options:</span>
-      
-      <button type="button" id="createPaletteButton" title="Create New Palette">➕</button>
-      <button type="button" id="uploadCommandFileButton" title="Import Palette from File">📥</button>
-      <input type="file" id="paletteFileUpload" accept=".json" style="display: none;" />
-      <button type="button" id="savePaletteButton" title="Save Current Palette" disabled>💾</button>
-      <button type="button" id="editPaletteButton" title="Edit Palette" disabled>✏️</button>
-      <button type="button" id="deletePaletteButton" class="danger-button" title="Delete Current Palette" disabled>🗑️</button>
+      <div id="palette-options-group" style="display: flex; align-items: center; gap: 10px;">
+        <span id="paletteOptionsLabelText" style="white-space: nowrap; font-weight: bold;">Palette Options:</span>
+        <button type="button" id="createPaletteButton" title="Create New Palette">➕</button>
+        <button type="button" id="uploadCommandFileButton" title="Import Palette from File">📥</button>
+        <input type="file" id="paletteFileUpload" accept=".json" style="display: none;" />
+        <button type="button" id="savePaletteButton" title="Save Current Palette" disabled>💾</button>
+        <button type="button" id="editPaletteButton" title="Edit Palette" disabled>✏️</button>
+        <button type="button" id="deletePaletteButton" class="danger-button" title="Delete Current Palette" disabled>🗑️</button>
+      </div>
     </div>
 
     <div class="tab-container" id="tabContainer">
