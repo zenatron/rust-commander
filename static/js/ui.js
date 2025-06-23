@@ -13,6 +13,9 @@ export class UIManager {
     this.initializeResizeHandle();
     this.loadedPaletteName = "";
     this.palettes = [];
+    this.editPaletteUnsavedChanges = false;
+    this.editPaletteEscapeListener = null;
+    this.editPaletteClickOutsideHandler = null;
   }
 
   // Set command manager reference
@@ -652,11 +655,32 @@ export class UIManager {
 
     // Store the palette data for later use
     this.editingPaletteData = commandsData;
-    
+
+    // Reset unsaved flag
+    this.editPaletteUnsavedChanges = false;
+
     // Create the tabbed interface
     this.createPaletteEditorTabs(commandsData);
-    
+
     modal.style.display = "block";
+
+    // Add click outside handler to close modal
+    const clickOutsideHandler = (e) => {
+      if (e.target === modal) {
+        this.attemptHideEditPaletteModal();
+      }
+    };
+    modal.addEventListener('click', clickOutsideHandler);
+    this.editPaletteClickOutsideHandler = clickOutsideHandler;
+
+    // Add escape key listener to close modal
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.attemptHideEditPaletteModal();
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    this.editPaletteEscapeListener = escapeHandler;
   }
 
   createPaletteEditorTabs(commandsData) {
@@ -715,6 +739,10 @@ export class UIManager {
         <input type="text" id="categoryName_${index}" value="${this.escapeHtml(categoryName)}" placeholder="Category name">
         <button type="button" class="btn-secondary" onclick="window.commanderApp.uiManager.renameCategoryFromInput('${categoryName}', 'categoryName_${index}')">Rename</button>
       `;
+      // Mark unsaved changes when category name edited
+      controls.querySelector(`#categoryName_${index}`).addEventListener('input', () => {
+        this.editPaletteUnsavedChanges = true;
+      });
       tabContent.appendChild(controls);
 
       // JSON editor for this category
@@ -723,6 +751,9 @@ export class UIManager {
       textarea.dataset.category = categoryName;
       textarea.placeholder = "Enter JSON commands for this category...";
       textarea.value = JSON.stringify(commandsData[categoryName] || {}, null, 2);
+      textarea.addEventListener('input', () => {
+        this.editPaletteUnsavedChanges = true;
+      });
       tabContent.appendChild(textarea);
 
       contentContainer.appendChild(tabContent);
@@ -755,8 +786,9 @@ export class UIManager {
 
     // Recreate the interface
     this.createPaletteEditorTabs(this.editingPaletteData);
-    
+
     this.showResponse(`Category "${categoryName}" deleted.`, false, "system_info");
+    this.editPaletteUnsavedChanges = true;
   }
 
   renameCategoryFromInput(oldCategoryName, inputId) {
@@ -793,8 +825,9 @@ export class UIManager {
     
     // Activate the renamed tab
     this.activatePaletteEditorTab(newName);
-    
+
     this.showResponse(`Category renamed from "${oldName}" to "${newName}".`, false, "system_info");
+    this.editPaletteUnsavedChanges = true;
   }
 
   addNewCategory() {
@@ -818,8 +851,9 @@ export class UIManager {
     
     // Activate the new tab
     this.activatePaletteEditorTab(trimmedName);
-    
+
     this.showResponse(`Category "${trimmedName}" added.`, false, "system_info");
+    this.editPaletteUnsavedChanges = true;
   }
 
   hideEditPaletteModal() {
@@ -829,6 +863,25 @@ export class UIManager {
     }
     // Clean up stored data
     this.editingPaletteData = null;
+    this.editPaletteUnsavedChanges = false;
+    if (this.editPaletteEscapeListener) {
+      document.removeEventListener('keydown', this.editPaletteEscapeListener);
+      this.editPaletteEscapeListener = null;
+    }
+    if (this.editPaletteClickOutsideHandler) {
+      modal.removeEventListener('click', this.editPaletteClickOutsideHandler);
+      this.editPaletteClickOutsideHandler = null;
+    }
+  }
+
+  attemptHideEditPaletteModal() {
+    if (this.editPaletteUnsavedChanges) {
+      const confirmClose = confirm('Discard unsaved changes?');
+      if (!confirmClose) {
+        return;
+      }
+    }
+    this.hideEditPaletteModal();
   }
 
   getPaletteEditorContent() {
