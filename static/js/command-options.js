@@ -4,7 +4,6 @@ export class CommandOptionsManager {
     this.commandManager = commandManager;
     this.uiManager = uiManager;
     this.saveManager = saveManager;
-    this.responseDiv = document.getElementById('response');
     this.previousPalette = null; // Track palette before edit/delete operations
   }
 
@@ -13,21 +12,19 @@ export class CommandOptionsManager {
     const currentCommandInfo = this.uiManager.getCurrentCommandInfo();
     
     if (!currentCommand) {
-      if (this.responseDiv) this.responseDiv.textContent = "Error: No command selected or filled to work with.";
-      else this.uiManager.showResponse("Error: No command selected or filled to work with.", true, "system_warn");
+      this.uiManager.showResponse("Error: No command selected or filled to work with.", true, "warn");
       return;
     }
 
     if (!currentCommandInfo) {
-      if (this.responseDiv) this.responseDiv.textContent = "Error: Command selection tracking lost. Please reselect a command.";
-      else this.uiManager.showResponse("Error: Command selection tracking lost. Please reselect a command.", true, "system_warn");
+      this.uiManager.showResponse("Error: Command selection tracking lost. Please reselect a command.", true, "warn");
       return;
     }
 
     // Store the current palette before any operations
     this.previousPalette = this.uiManager.getCurrentPaletteName();
 
-    if (this.responseDiv) this.responseDiv.textContent = "Choose command option...";
+    this.uiManager.showResponse("Choose command option...", false, "info");
 
     const existingModal = document.getElementById('dynamic-command-options-modal');
     if (existingModal) {
@@ -111,7 +108,7 @@ export class CommandOptionsManager {
 
   async transformToSaveModal(modalElement, dialogElement, existingEscapeListener) {
     // Update response message
-    if (this.responseDiv) this.responseDiv.textContent = "Enter command name and choose save option...";
+    this.uiManager.showResponse("Enter command name and choose save option...", false, "info");
 
     // Get the current command to save
     const currentCommand = this.commandManager.getCurrentFilledCommand();
@@ -208,7 +205,7 @@ export class CommandOptionsManager {
 
   showCommandOptionsModalContent(dialogElement) {
     // Reset response message
-    if (this.responseDiv) this.responseDiv.textContent = "Choose command option...";
+    this.uiManager.showResponse("Choose command option...", false, "info");
 
     // Restore the original command options content
     dialogElement.innerHTML = `
@@ -267,7 +264,7 @@ export class CommandOptionsManager {
 
   async transformToEditModal(modalElement, dialogElement, existingEscapeListener) {
     // Update response message
-    if (this.responseDiv) this.responseDiv.textContent = "Edit command JSON...";
+    this.uiManager.showResponse("Edit command JSON...", false, "info");
 
     // Get the current command to edit
     const currentCommand = this.commandManager.getCurrentFilledCommand();
@@ -276,7 +273,7 @@ export class CommandOptionsManager {
     const currentCommandInfo = this.uiManager.getCurrentCommandInfo();
     
     if (!currentCommandInfo) {
-      if (this.responseDiv) this.responseDiv.textContent = "Error: No command selected for editing. Please select a command first.";
+      this.uiManager.showResponse("Error: No command selected for editing. Please select a command first.", true, "error");
       return;
     }
 
@@ -286,7 +283,7 @@ export class CommandOptionsManager {
       if (currentPalette) {
         currentCommandInfo.paletteName = currentPalette;
       } else {
-        if (this.responseDiv) this.responseDiv.textContent = "Error: Cannot determine current palette for editing.";
+        this.uiManager.showResponse("Error: Cannot determine current palette for editing.", true, "error");
         return;
       }
     }
@@ -348,7 +345,7 @@ export class CommandOptionsManager {
     const currentCommandInfo = this.uiManager.getCurrentCommandInfo();
     
     if (!currentCommandInfo) {
-      if (this.responseDiv) this.responseDiv.textContent = "Error: No command selected for deletion. Please select a command first.";
+      this.uiManager.showResponse("Error: No command selected for deletion. Please select a command first.", true, "error");
       return;
     }
 
@@ -358,7 +355,7 @@ export class CommandOptionsManager {
       if (currentPalette) {
         currentCommandInfo.paletteName = currentPalette;
       } else {
-        if (this.responseDiv) this.responseDiv.textContent = "Error: Cannot determine current palette for deletion.";
+        this.uiManager.showResponse("Error: Cannot determine current palette for deletion.", true, "error");
         return;
       }
     }
@@ -366,7 +363,7 @@ export class CommandOptionsManager {
     const confirmMessage = `Are you sure you want to delete the command "${currentCommandInfo.commandName}" from category "${currentCommandInfo.categoryName}" in palette "${currentCommandInfo.paletteName}"?\n\nThis action cannot be undone.`;
     
     if (!confirm(confirmMessage)) {
-      if (this.responseDiv) this.responseDiv.textContent = "Delete cancelled.";
+      this.uiManager.showResponse("Delete cancelled.", false, "info");
       return;
     }
 
@@ -389,7 +386,7 @@ export class CommandOptionsManager {
       }
     } catch (error) {
       console.error('Error deleting command:', error);
-      if (this.responseDiv) this.responseDiv.textContent = `Delete error: ${error.message}`;
+      this.uiManager.showResponse(`Delete error: ${error.message}`, true, "error");
     }
   }
 
@@ -401,7 +398,7 @@ export class CommandOptionsManager {
     if (!editedContent) {
       const confirmDelete = confirm(`The command content is empty. This will delete the command "${commandInfo.commandName}".\n\nAre you sure you want to delete this command?`);
       if (!confirmDelete) {
-        if (this.responseDiv) this.responseDiv.textContent = "Edit cancelled.";
+        this.uiManager.showResponse("Edit cancelled.", false, "info");
         return;
       }
       
@@ -428,7 +425,7 @@ export class CommandOptionsManager {
     try {
       parsedCommand = JSON.parse(editedContent);
     } catch (e) {
-      if (this.responseDiv) this.responseDiv.textContent = "Invalid JSON format. Please check your syntax.";
+      this.uiManager.showResponse("Invalid JSON format. Please check your syntax.", true, "error");
       return;
     }
 
@@ -443,15 +440,15 @@ export class CommandOptionsManager {
         if (this.uiManager) {
           this.uiManager.updateRawJsonDisplay(parsedCommand);
           this.uiManager.updateFilledJsonDisplay(parsedCommand);
+          // Show success message
+          this.uiManager.showResponse(`Command "${commandInfo.commandName}" updated successfully.`, true, "success");
         }
       }
     } catch (error) {
       console.error('Error updating command:', error);
-      if (this.responseDiv) this.responseDiv.textContent = `Update error: ${error.message}`;
+      this.uiManager.showResponse(`Update error: ${error.message}`, true, "error");
     }
   }
-
-
 
   async deleteCommandFromPalette(commandInfo) {
     try {
@@ -492,9 +489,7 @@ export class CommandOptionsManager {
         throw new Error(`Failed to update palette: ${updateResponse.status}, ${errorData}`);
       }
 
-      if (this.responseDiv) {
-        this.responseDiv.textContent = `Command "${commandInfo.commandName}" deleted successfully from palette "${commandInfo.paletteName}".`;
-      }
+      this.uiManager.showResponse(`Command "${commandInfo.commandName}" deleted successfully from palette "${commandInfo.paletteName}".`, true, "success");
 
       // Refresh the UI - use previousPalette if it still exists, otherwise use current palette
       if (window.commanderApp && typeof window.commanderApp.loadPalette === 'function') {
@@ -515,7 +510,7 @@ export class CommandOptionsManager {
       return { success: true };
     } catch (error) {
       console.error('Error deleting command:', error);
-      if (this.responseDiv) this.responseDiv.textContent = `Delete error: ${error.message}`;
+      this.uiManager.showResponse(`Delete error: ${error.message}`, true, "error");
       return { success: false, error: error.message };
     }
   }
@@ -555,9 +550,8 @@ export class CommandOptionsManager {
         throw new Error(`Failed to update palette: ${updateResponse.status}, ${errorData}`);
       }
 
-      if (this.responseDiv) {
-        this.responseDiv.textContent = `Command "${commandInfo.commandName}" updated successfully in palette "${commandInfo.paletteName}".`;
-      }
+      // Don't show a toast here because handleEditCommand will show one.
+      // this.uiManager.showResponse(`Command "${commandInfo.commandName}" updated successfully in palette "${commandInfo.paletteName}".`, true, "success");
 
       // Refresh the UI - use previousPalette if it still exists, otherwise use current palette
       if (window.commanderApp && typeof window.commanderApp.loadPalette === 'function') {
@@ -586,7 +580,7 @@ export class CommandOptionsManager {
       return { success: true };
     } catch (error) {
       console.error('Error updating command:', error);
-      if (this.responseDiv) this.responseDiv.textContent = `Update error: ${error.message}`;
+      this.uiManager.showResponse(`Update error: ${error.message}`, true, "error");
       return { success: false, error: error.message };
     }
   }
@@ -648,7 +642,7 @@ export class CommandOptionsManager {
 
     const commandName = commandNameInput?.value.trim();
     if (!commandName) {
-      if (this.responseDiv) this.responseDiv.textContent = "Command name is required.";
+      this.uiManager.showResponse("Command name is required.", true, "warn");
       return;
     }
 
@@ -656,17 +650,17 @@ export class CommandOptionsManager {
     if (paletteSelectionArea.style.display === 'block') {
       targetPalette = paletteSelect?.value;
       if (!targetPalette) {
-        if (this.responseDiv) this.responseDiv.textContent = "Please select a palette.";
+        this.uiManager.showResponse("Please select a palette.", true, "warn");
         return;
       }
     } else if (newPaletteArea.style.display === 'block') {
       targetPalette = newPaletteNameInput?.value.trim();
       if (!targetPalette) {
-        if (this.responseDiv) this.responseDiv.textContent = "New palette name is required.";
+        this.uiManager.showResponse("New palette name is required.", true, "warn");
         return;
       }
     } else {
-      if (this.responseDiv) this.responseDiv.textContent = "Please choose a save option.";
+      this.uiManager.showResponse("Please choose a save option.", true, "warn");
       return;
     }
 
@@ -717,15 +711,6 @@ export class CommandOptionsManager {
   closeDynamicModal(modalElement, escapeListenerToRemove) {
     if (modalElement && modalElement.parentNode) {
       modalElement.parentNode.removeChild(modalElement);
-    }
-    if (this.responseDiv && (
-        this.responseDiv.textContent === "Choose command option..." ||
-        this.responseDiv.textContent === "Enter command name and choose save option..." ||
-        this.responseDiv.textContent === "Edit command JSON..." ||
-        this.responseDiv.textContent === "Delete cancelled." ||
-        this.responseDiv.textContent === "Edit cancelled."
-    )) {
-        this.responseDiv.textContent = ""; 
     }
     if (escapeListenerToRemove) {
       document.removeEventListener('keydown', escapeListenerToRemove);

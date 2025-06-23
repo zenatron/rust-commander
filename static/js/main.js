@@ -4,10 +4,12 @@ import { ConnectionManager } from './connection.js';
 import { UIManager } from './ui.js';
 import { SaveManager } from './save.js';
 import { CommandOptionsManager } from './command-options.js';
+import { ToastManager } from './toast.js';
 
 class App {
   constructor() {
-    this.uiManager = new UIManager();
+    this.toastManager = new ToastManager();
+    this.uiManager = new UIManager(this.toastManager);
     this.commandManager = new CommandManager();
     this.uiManager.setCommandManager(this.commandManager);
     this.connectionManager = new ConnectionManager(
@@ -46,19 +48,19 @@ class App {
         // Automatically load the first palette if available
         await this.loadPalette(palettes[0]); 
       } else {
-        this.uiManager.showResponse("No palettes found. Create or upload a palette.", true, "system_info");
+        this.uiManager.showResponse("No palettes found. Create or upload a palette.", true, "info");
         this.uiManager.clearCommandPalette(); // Clear commands if no palette is loaded
       }
     } catch (error) {
       console.error('Error fetching palettes:', error);
-      this.uiManager.showResponse(`Error fetching palettes: ${error.message}`, true, "system_error");
+      this.uiManager.showResponse(`Error fetching palettes: ${error.message}`, true, "error");
       this.uiManager.clearCommandPalette();
     }
   }
 
   async loadPalette(paletteName, skipAutoActivation = false) {
     if (!paletteName) {
-        this.uiManager.showResponse("No palette specified to load.", true, "system_warn");
+        this.uiManager.showResponse("No palette specified to load.", true, "warn");
         this.uiManager.clearCommandPalette();
         return;
     }
@@ -67,25 +69,25 @@ class App {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const commandsData = await response.json();
-      this.commandManager.loadCommandsFromJson(commandsData);
+      const paletteData = await response.json();
+      const loadResult = this.commandManager.loadCommandsFromJson(paletteData);
       
       // Pass only the commands map to populateCommandPalette
-      if (commandsData && commandsData.commands) {
-        this.uiManager.populateCommandPalette(commandsData.commands, skipAutoActivation);
+      if (loadResult.success && loadResult.data) {
+        this.uiManager.populateCommandPalette(loadResult.data, skipAutoActivation);
       } else {
         // Handle cases where commandsData might not be in the expected format or empty
-        console.error("Loaded palette data does not contain a 'commands' map:", commandsData);
+        console.error("Loaded palette data is not in the expected format or failed to load:", paletteData);
         this.uiManager.clearCommandPalette(); // Clear UI if data is bad
-        this.uiManager.showResponse("Error: Loaded palette data is not in the expected format.", true, "system_error");
+        this.uiManager.showResponse(loadResult.error || "Error: Loaded palette data is not in the expected format.", true, "error");
       }
       
       this.uiManager.updateLoadedPaletteName(paletteName);
       this.uiManager.setSelectedPalette(paletteName);
-      this.uiManager.showResponse(`Palette '${paletteName}' loaded successfully.`, true, "system_info");
+      this.uiManager.showResponse(`Palette '${paletteName}' loaded successfully.`, true, "success");
     } catch (error) {
       console.error(`Error loading palette ${paletteName}:`, error);
-      this.uiManager.showResponse(`Error loading palette '${paletteName}': ${error.message}`, true, "system_error");
+      this.uiManager.showResponse(`Error loading palette '${paletteName}': ${error.message}`, true, "error");
       this.uiManager.clearCommandPalette();
       this.uiManager.updateLoadedPaletteName(""); // Clear loaded palette name on error
     }
@@ -94,13 +96,13 @@ class App {
   async saveCurrentPalette() {
     const currentPaletteName = this.uiManager.getCurrentPaletteName();
     if (!currentPaletteName) {
-      this.uiManager.showResponse("No palette selected to save or new palette name not provided.", true, "system_warn");
+      this.uiManager.showResponse("No palette selected to save or new palette name not provided.", true, "warn");
       return;
     }
 
     const commandsToSave = this.commandManager.getAllCommands();
     if (Object.keys(commandsToSave).length === 0) {
-        this.uiManager.showResponse("No commands to save in the current palette.", true, "system_warn");
+        this.uiManager.showResponse("No commands to save in the current palette.", true, "warn");
         return;
     }
 
@@ -116,20 +118,20 @@ class App {
         const errorData = await response.text();
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
       }
-      this.uiManager.showResponse(`Palette '${currentPaletteName}' saved successfully.`, true, "system_info");
+      this.uiManager.showResponse(`Palette '${currentPaletteName}' saved successfully.`, true, "success");
       // After saving, refresh the palette list in case it was a new palette
       await this.fetchPalettes(); 
       this.uiManager.setSelectedPalette(currentPaletteName); // Reselect the saved palette
     } catch (error) {
       console.error(`Error saving palette ${currentPaletteName}:`, error);
-      this.uiManager.showResponse(`Error saving palette '${currentPaletteName}': ${error.message}`, true, "system_error");
+      this.uiManager.showResponse(`Error saving palette '${currentPaletteName}': ${error.message}`, true, "error");
     }
   }
   
   async createNewPalette() {
     const paletteName = prompt("Enter name for the new palette:");
     if (!paletteName || paletteName.trim() === "") {
-        this.uiManager.showResponse("Palette name cannot be empty.", true, "system_warn");
+        this.uiManager.showResponse("Palette name cannot be empty.", true, "warn");
         return;
     }
 
@@ -147,20 +149,20 @@ class App {
             const errorData = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
         }
-        this.uiManager.showResponse(`Palette '${paletteName}' created successfully.`, true, "system_info");
+        this.uiManager.showResponse(`Palette '${paletteName}' created successfully.`, true, "success");
         await this.fetchPalettes();
         this.uiManager.setSelectedPalette(paletteName);
         await this.loadPalette(paletteName);
     } catch (error) {
         console.error(`Error creating palette ${paletteName}:`, error);
-        this.uiManager.showResponse(`Error creating palette '${paletteName}': ${error.message}`, true, "system_error");
+        this.uiManager.showResponse(`Error creating palette '${paletteName}': ${error.message}`, true, "error");
     }
   }
 
 
   async deletePalette(paletteName) {
     if (!paletteName) {
-      this.uiManager.showResponse("No palette specified to delete.", true, "system_warn");
+      this.uiManager.showResponse("No palette specified to delete.", true, "warn");
       return;
     }
     if (!confirm(`Are you sure you want to delete the palette '${paletteName}'? This action cannot be undone.`)) {
@@ -172,7 +174,7 @@ class App {
         const errorData = await response.text();
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
       }
-      this.uiManager.showResponse(`Palette '${paletteName}' deleted successfully.`, true, "system_info");
+      this.uiManager.showResponse(`Palette '${paletteName}' deleted successfully.`, true, "success");
       await this.fetchPalettes(); // Refresh the list
       const currentSelectedPalette = this.uiManager.getCurrentPaletteName();
       if (currentSelectedPalette === paletteName || !currentSelectedPalette) {
@@ -186,13 +188,13 @@ class App {
       }
     } catch (error) {
       console.error(`Error deleting palette ${paletteName}:`, error);
-      this.uiManager.showResponse(`Error deleting palette '${paletteName}': ${error.message}`, true, "system_error");
+      this.uiManager.showResponse(`Error deleting palette '${paletteName}': ${error.message}`, true, "error");
     }
   }
 
   async savePaletteChanges(paletteName, newPaletteContentString) {
     if (!paletteName) {
-      this.uiManager.showResponse("No palette name provided for saving changes.", true, "system_warn");
+      this.uiManager.showResponse("No palette name provided for saving changes.", true, "warn");
       return;
     }
 
@@ -200,7 +202,7 @@ class App {
     try {
       commandsObject = JSON.parse(newPaletteContentString);
     } catch (e) {
-      this.uiManager.showResponse("Invalid JSON format in editor. Cannot save changes.", true, "system_error");
+      this.uiManager.showResponse("Invalid JSON format in editor. Cannot save changes.", true, "error");
       return;
     }
 
@@ -222,13 +224,13 @@ class App {
         const errorData = await response.text();
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
       }
-      this.uiManager.showResponse(`Palette '${paletteName}' updated successfully.`, true, "system_info");
+      this.uiManager.showResponse(`Palette '${paletteName}' updated successfully.`, true, "success");
       await this.fetchPalettes(); // Refresh palette list
       this.uiManager.setSelectedPalette(paletteName); // Reselect the updated palette
       await this.loadPalette(paletteName); // Reload the updated palette
     } catch (error) {
       console.error(`Error updating palette ${paletteName}:`, error);
-      this.uiManager.showResponse(`Error updating palette '${paletteName}': ${error.message}`, true, "system_error");
+      this.uiManager.showResponse(`Error updating palette '${paletteName}': ${error.message}`, true, "error");
     }
   }
 
@@ -296,14 +298,14 @@ class App {
     document.getElementById("connectButton_header").addEventListener("click", async () => {
       const socketPath = document.getElementById("socket_path_header").value.trim();
       if (!socketPath) {
-        this.uiManager.showResponse('Please enter a socket path', true, "system_warn");
+        this.uiManager.showResponse('Please enter a socket path', true, "warn");
         return;
       }
 
       // Get the result from the connection manager
       const result = await this.connectionManager.connectTCP(socketPath);
       // Apply appropriate styling based on success/failure
-      const messageType = result.success ? "system_info" : "system_error";
+      const messageType = result.success ? "success" : "error";
       this.uiManager.showResponse(result.message, false, messageType);
     });
 
@@ -311,7 +313,7 @@ class App {
       // Get the result from the disconnection manager
       const result = await this.connectionManager.disconnectTCP();
       // Apply appropriate styling based on success/failure
-      const messageType = result.success ? "system_info" : "system_error";
+      const messageType = result.success ? "info" : "error";
       this.uiManager.showResponse(result.message, false, messageType);
     });
 
@@ -328,7 +330,7 @@ class App {
 
             const paletteName = prompt("Enter name for the new palette (e.g., from filename):", file.name.replace(/\.[^/.]+$/, ""));
             if (!paletteName || paletteName.trim() === "") {
-                this.uiManager.showResponse("Palette name cannot be empty for import.", true, "system_warn");
+                this.uiManager.showResponse("Palette name cannot be empty for import.", true, "warn");
                 return;
             }
 
@@ -345,16 +347,16 @@ class App {
                         const errorData = await response.text();
                         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
                     }
-                    this.uiManager.showResponse(`Palette '${paletteName}' created from file '${file.name}' and loaded.`, true, "system_info");
+                    this.uiManager.showResponse(`Palette '${paletteName}' created from file '${file.name}' and loaded.`, true, "success");
                     await this.fetchPalettes();
                     this.uiManager.setSelectedPalette(paletteName);
                     await this.loadPalette(paletteName);
                 } catch (jsonError) {
-                    this.uiManager.showResponse(`Error parsing JSON from ${file.name}: ${jsonError.message}`, true, "system_error");
+                    this.uiManager.showResponse(`Error parsing JSON from ${file.name}: ${jsonError.message}`, true, "error");
                 }
             };
             reader.onerror = () => {
-                this.uiManager.showResponse(`Error reading file ${file.name}.`, true, "system_error");
+                this.uiManager.showResponse(`Error reading file ${file.name}.`, true, "error");
             };
             reader.readAsText(file);
         });
@@ -409,7 +411,7 @@ class App {
             if (selectedPalette) {
                 await this.deletePalette(selectedPalette);
             } else {
-                this.uiManager.showResponse("No palette selected to delete.", true, "system_warn");
+                this.uiManager.showResponse("No palette selected to delete.", true, "warn");
             }
         });
     } else {
@@ -422,7 +424,7 @@ class App {
       editPaletteButton.addEventListener("click", async () => {
         const currentPaletteName = this.uiManager.getCurrentPaletteName();
         if (!currentPaletteName) {
-          this.uiManager.showResponse("No palette selected to edit.", true, "system_warn");
+          this.uiManager.showResponse("No palette selected to edit.", true, "warn");
           return;
         }
         try {
@@ -436,12 +438,12 @@ class App {
           if (paletteData && paletteData.commands) {
             this.uiManager.showEditPaletteModal(JSON.stringify(paletteData.commands, null, 2));
           } else {
-            this.uiManager.showResponse(`Palette data for '${currentPaletteName}' is missing 'commands'. Cannot edit.`, true, "system_error");
+            this.uiManager.showResponse(`Palette data for '${currentPaletteName}' is missing 'commands'. Cannot edit.`, true, "error");
             console.error("Fetched paletteData is missing a commands field:", paletteData);
           }
         } catch (error) {
           console.error(`Error fetching palette content for editing ${currentPaletteName}:`, error);
-          this.uiManager.showResponse(`Error fetching palette content for \'${currentPaletteName}\': ${error.message}`, true, "system_error");
+          this.uiManager.showResponse(`Error fetching palette content for \'${currentPaletteName}\': ${error.message}`, true, "error");
         }
       });
     } else {
@@ -467,13 +469,13 @@ class App {
             commands = JSON.parse(newPaletteContent);
         } catch (e) {
             // This is a fallback, but getPaletteEditorContent should have caught this.
-            this.uiManager.showResponse("Invalid JSON format in editor.", true, "system_error");
+            this.uiManager.showResponse("Invalid JSON format in editor.", true, "error");
             return;
         }
 
         // Check if the resulting command object is empty.
         if (Object.keys(commands).length === 0) {
-            this.uiManager.showResponse("Palette content cannot be empty.", true, "system_warn");
+            this.uiManager.showResponse("Palette content cannot be empty.", true, "warn");
             return;
         }
 
@@ -546,7 +548,7 @@ class App {
         this.uiManager.addMessage(JSON.stringify(command) + (delimiter ? ` (delim: '${delimiter}')` : ''), "sent");
       } else {
         // Apply error styling to the response div
-        this.uiManager.showResponse(`Send error: ${result.message}`, false, "system_error");
+        this.uiManager.showResponse(`Send error: ${result.message}`, false, "error");
       }
     });
 
@@ -583,7 +585,7 @@ class App {
     const allFilled = this.commandManager.areAllVariablesFilled(container);
     
     if (!allFilled) {
-      this.uiManager.showResponse('Please fill in all required variables', true, "system_warn");
+      this.uiManager.showResponse('Please fill in all required variables', true, "warn");
       return false;
     }
     return true;
@@ -591,7 +593,7 @@ class App {
 
   validateAndSendCommand() {
     if (!this.connectionManager.isWebSocketConnected()) {
-      this.uiManager.showResponse('WebSocket not connected', true, "system_error");
+      this.uiManager.showResponse('WebSocket not connected', true, "error");
       return false;
     }
 

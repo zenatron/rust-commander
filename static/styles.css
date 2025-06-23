@@ -229,35 +229,6 @@ input[type="text"]:focus {
     padding-left: 0;
 }
 
-#response {
-    border: 1px solid black;
-    border-radius: 4px;
-    padding: 5px;
-    margin-top: 5px;
-    text-align: center;
-    min-width: 250px;
-    font-size: 0.9em;
-    min-height: 1.2em;
-    box-sizing: border-box;
-}
-
-/* Response div message types */
-.response-info {
-    background-color: #e0e0e0;
-    color: #3a3a3a;
-}
-
-.response-warn {
-    background-color: #fff0a3;
-    color: #856404;
-}
-
-.response-error {
-    background-color: #ffcccb;
-    color: #721c24;
-    font-weight: bold;
-}
-
 pre#rawJsonDisplay, pre#filledJsonDisplay {
     width: 100%;
     box-sizing: border-box;
@@ -428,20 +399,17 @@ pre#messagesDisplay {
 .message-system_info, .message-system_info-legend {
     background-color: #e0e0e0;
     color: #3a3a3a;
-    font-style: italic;
 }
 
 .message-system_warn, .message-system_warn-legend {
     background-color: #fff0a3;
     color: #856404;
-    font-style: italic;
 }
 
 .message-system_error, .message-system_error-legend {
     background-color: #ffcccb;
     color: #721c24;
     font-weight: bold;
-    font-style: italic;
 }
 
 #sortMessagesButton {
@@ -922,6 +890,97 @@ pre#messagesDisplay {
     width: 85px;
 }
 
+/* Toast Notifications */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none; /* Allow clicks to pass through */
+}
+
+.toast {
+    background: #fff;
+    border-left: 5px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 15px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease-in-out;
+    max-width: 350px;
+    min-width: 300px;
+    font-size: 0.95em;
+    cursor: pointer;
+    pointer-events: auto; /* Toasts are clickable */
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.toast p {
+    margin: 0;
+    color: #333;
+    line-height: 1.4;
+}
+
+.toast i {
+    font-size: 1.5em;
+}
+
+.toast-dismiss-note {
+    font-size: 0.8em;
+    color: #888;
+    align-self: flex-end;
+}
+
+/* Toast types */
+.toast-info {
+    border-left-color: #007bff;
+}
+.toast-info i {
+    color: #007bff;
+}
+
+.toast-success {
+    border-left-color: #28a745;
+}
+.toast-success i {
+    color: #28a745;
+}
+
+.toast-warn {
+    border-left-color: #ffc107;
+}
+.toast-warn i {
+    color: #ffc107;
+}
+
+.toast-error {
+    border-left-color: #dc3545;
+}
+.toast-error i {
+    color: #dc3545;
+}
+
 /* Responsive adjustments for narrow screens */
 @media (max-width: 768px) {
     #mainInteractiveArea {
@@ -969,5 +1028,13 @@ pre#messagesDisplay {
     
     .selected-command-name {
         max-width: 40vw;
+    }
+
+    #toast-container {
+        right: 10px;
+        left: 10px;
+        top: 10px;
+        width: auto;
+        align-items: center;
     }
 }

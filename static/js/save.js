@@ -2,7 +2,6 @@ export class SaveManager {
   constructor(commandManager, uiManager) {
     this.commandManager = commandManager;
     this.uiManager = uiManager;
-    this.responseDiv = document.getElementById('response');
   }
 
 
@@ -10,8 +9,7 @@ export class SaveManager {
   async showSaveModal() {
     const currentCommand = this.commandManager.getCurrentFilledCommand();
     if (!currentCommand) {
-      if (this.responseDiv) this.responseDiv.textContent = "Error: No command selected or filled to save.";
-      else this.uiManager.showAlert("Error: No command selected or filled to save.", "error");
+      this.uiManager.showResponse("Error: No command selected or filled to save.", "error");
       return;
     }
 
@@ -26,7 +24,7 @@ export class SaveManager {
       console.error('Error fetching palettes:', error);
     }
 
-    if (this.responseDiv) this.responseDiv.textContent = "Enter command name and choose save option...";
+    this.uiManager.showResponse("Enter command name and choose save option...", false, "info");
 
     const existingModal = document.getElementById('dynamic-save-modal');
     if (existingModal) {
@@ -104,8 +102,7 @@ export class SaveManager {
         
         if (!this.validateCommandName(commandName)) return;
         if (!selectedPalette) {
-          if (this.responseDiv) this.responseDiv.textContent = "Please select a palette.";
-          else this.uiManager.showAlert("Please select a palette.", "error");
+          this.uiManager.showResponse("Please select a palette.", "error");
           return;
         }
         
@@ -137,8 +134,7 @@ export class SaveManager {
 
   validateCommandName(commandName) {
     if (!commandName) {
-      if (this.responseDiv) this.responseDiv.textContent = "Error: Command name cannot be empty.";
-      else this.uiManager.showAlert("Error: Command name cannot be empty.", "error");
+      this.uiManager.showResponse("Error: Command name cannot be empty.", "error");
       const modalInput = document.getElementById('modalSaveCommandName');
       if (modalInput) modalInput.focus();
       return false;
@@ -160,16 +156,16 @@ export class SaveManager {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         if (response.status === 409) {
-          if (this.responseDiv) this.responseDiv.textContent = errorData.message || 'Command already exists in palette.';
+          this.uiManager.showResponse(errorData.message || 'Command already exists in palette.', "warn");
           return { success: false, error: errorData.message || 'Command already exists' };
         } else {
-          if (this.responseDiv) this.responseDiv.textContent = `Save error: ${errorData.error || 'Unknown error'}`;
+          this.uiManager.showResponse(`Save error: ${errorData.error || 'Unknown error'}`, "error");
           return { success: false, error: errorData.error || 'Unknown error' };
         }
       }
 
       const result = await response.json();
-      if (this.responseDiv) this.responseDiv.textContent = `Command '${commandName}' saved to palette '${paletteName}' successfully.`;
+      this.uiManager.showResponse(`Command '${commandName}' saved to palette '${paletteName}' successfully.`, "success");
       
       // Trigger a refresh of the UI if needed (you may want to emit an event here)
       if (window.commanderApp && typeof window.commanderApp.fetchPalettes === 'function') {
@@ -183,7 +179,7 @@ export class SaveManager {
       return { success: true, result };
     } catch (error) {
       console.error('Error saving command:', error);
-      if (this.responseDiv) this.responseDiv.textContent = `Save error: ${error.message}`;
+      this.uiManager.showResponse(`Save error: ${error.message}`, "error");
       return { success: false, error: error.message };
     }
   }
@@ -191,9 +187,6 @@ export class SaveManager {
   closeDynamicModal(modalElement, escapeListenerToRemove) {
     if (modalElement && modalElement.parentNode) {
       modalElement.parentNode.removeChild(modalElement);
-    }
-    if (this.responseDiv && this.responseDiv.textContent === "Enter command name and choose save option...") {
-        this.responseDiv.textContent = ""; 
     }
     if (escapeListenerToRemove) {
       document.removeEventListener('keydown', escapeListenerToRemove);
@@ -236,7 +229,7 @@ export class SaveManager {
         // Command already exists - ask for confirmation
         const overwrite = confirm(`Command "${this.escapeHtml(commandName)}" already exists in palette "${this.escapeHtml(paletteName)}". Overwrite?`);
         if (!overwrite) {
-          if (this.responseDiv) this.responseDiv.textContent = "Save cancelled. Command name already exists.";
+          this.uiManager.showResponse("Save cancelled. Command name already exists.", "info");
           return;
         }
         
@@ -253,8 +246,7 @@ export class SaveManager {
       const result = await response.json();
       console.log('Save successful:', result);
       
-      if (this.responseDiv) this.responseDiv.textContent = `Command '${this.escapeHtml(commandName)}' added to palette '${this.escapeHtml(paletteName)}' successfully!`;
-      else this.uiManager.showAlert(`Command '${this.escapeHtml(commandName)}' added to palette '${this.escapeHtml(paletteName)}' successfully!`, 'success');
+      this.uiManager.showResponse(`Command '${this.escapeHtml(commandName)}' added to palette '${this.escapeHtml(paletteName)}' successfully!`, 'success');
       
       this.closeDynamicModal(modalToClose, null);
       
@@ -277,8 +269,7 @@ export class SaveManager {
         errorMessage = error.message;
       }
       
-      if (this.responseDiv) this.responseDiv.textContent = `Error adding command: ${errorMessage}`;
-      else this.uiManager.showAlert(`Error adding command: ${errorMessage}`, 'error');
+      this.uiManager.showResponse(`Error adding command: ${errorMessage}`, 'error');
       
       const retry = confirm(`Failed to save command: ${errorMessage}\n\nWould you like to try again?`);
       if (retry) {
@@ -337,8 +328,7 @@ export class SaveManager {
 
       console.log('Overwrite successful');
       
-      if (this.responseDiv) this.responseDiv.textContent = `Command '${this.escapeHtml(commandName)}' updated in palette '${this.escapeHtml(paletteName)}' successfully!`;
-      else this.uiManager.showAlert(`Command '${this.escapeHtml(commandName)}' updated in palette '${this.escapeHtml(paletteName)}' successfully!`, 'success');
+      this.uiManager.showResponse(`Command '${this.escapeHtml(commandName)}' updated in palette '${this.escapeHtml(paletteName)}' successfully!`, 'success');
       
       this.closeDynamicModal(modalToClose, null);
       
@@ -361,8 +351,7 @@ export class SaveManager {
         errorMessage = error.message;
       }
       
-      if (this.responseDiv) this.responseDiv.textContent = `Error updating command: ${errorMessage}`;
-      else this.uiManager.showAlert(`Error updating command: ${errorMessage}`, 'error');
+      this.uiManager.showResponse(`Error updating command: ${errorMessage}`, 'error');
       
       const retry = confirm(`Failed to update command: ${errorMessage}\n\nWould you like to try again?`);
       if (retry) {
@@ -376,8 +365,7 @@ export class SaveManager {
   async createNewPalette(commandName, currentCommand, modalToClose) {
     const paletteName = prompt("Enter name for the new palette:");
     if (!paletteName || paletteName.trim() === "") {
-      if (this.responseDiv) this.responseDiv.textContent = "Palette name cannot be empty.";
-      else this.uiManager.showAlert("Palette name cannot be empty.", "error");
+      this.uiManager.showResponse("Palette name cannot be empty.", "error");
       return;
     }
 
@@ -412,8 +400,7 @@ export class SaveManager {
 
       console.log('New palette created successfully');
 
-      if (this.responseDiv) this.responseDiv.textContent = `New palette '${this.escapeHtml(paletteName)}' created with command '${this.escapeHtml(commandName)}'!`;
-      else this.uiManager.showAlert(`New palette '${this.escapeHtml(paletteName)}' created with command '${this.escapeHtml(commandName)}'!`, 'success');
+      this.uiManager.showResponse(`New palette '${this.escapeHtml(paletteName)}' created with command '${this.escapeHtml(commandName)}'!`, 'success');
       
       this.closeDynamicModal(modalToClose, null);
       
@@ -439,8 +426,7 @@ export class SaveManager {
         errorMessage = error.message;
       }
       
-      if (this.responseDiv) this.responseDiv.textContent = `Error creating palette: ${errorMessage}`;
-      else this.uiManager.showAlert(`Error creating palette: ${errorMessage}`, 'error');
+      this.uiManager.showResponse(`Error creating palette: ${errorMessage}`, 'error');
       
       const retry = confirm(`Failed to create palette: ${errorMessage}\n\nWould you like to try again?`);
       if (retry) {

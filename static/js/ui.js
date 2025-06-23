@@ -1,6 +1,7 @@
 // UI management module
 export class UIManager {
-  constructor() {
+  constructor(toastManager) {
+    this.toastManager = toastManager;
     this.messageHistory = [];
     this.messageId = 0;
     this.isSortedNewestFirst = false;
@@ -27,10 +28,6 @@ export class UIManager {
   // Initialize UI
   initialize() {
     this.updateConnectionStatus(false);
-    
-    // Set initial style for response div
-    const responseDiv = document.getElementById("response");
-    responseDiv.classList.add("response-info");
   }
 
   // Command palette functionality - create tabs and command lists
@@ -138,7 +135,7 @@ export class UIManager {
                 window.commanderApp.handleCommandSelection(cmdJsonString);
               } else {
                 console.error("Command data not found on list item", e.target);
-                this.showResponse("Error: Could not load selected command details.", true, "system_error");
+                this.showResponse("Error: Could not load selected command details.", true, "error");
               }
             });
             commandListUL.appendChild(listItem);
@@ -195,20 +192,31 @@ export class UIManager {
   }
 
   // Show response in the response div and add to message panel
-  showResponse(message, addSystemMessage = true, messageType = "system_info") {
-    const responseDiv = document.getElementById("response");
-    responseDiv.textContent = message;
-    
-    // Apply appropriate styling to the response div based on message type
-    responseDiv.className = "";
-    if (messageType === "system_info") {
-      responseDiv.classList.add("response-info");
-    } else if (messageType === "system_warn") {
-      responseDiv.classList.add("response-warn");
-    } else if (messageType === "system_error") {
-      responseDiv.classList.add("response-error");
+  showResponse(message, addSystemMessage = true, messageType = "info") {
+    let toastType = 'info';
+    switch (messageType) {
+      case 'system_info':
+      case 'info':
+        toastType = 'info';
+        break;
+      case 'system_warn':
+      case 'warn':
+        toastType = 'warn';
+        break;
+      case 'system_error':
+      case 'error':
+        toastType = 'error';
+        break;
+      case 'success':
+        toastType = 'success';
+        break;
+    }
+
+    if (this.toastManager) {
+      this.toastManager.show(message, toastType);
     } else {
-      responseDiv.classList.add("response-info"); // Default
+      // Fallback to old console log if toast manager isn't there for some reason
+      console.log(`[Toast Fallback] ${messageType}: ${message}`);
     }
     
     // Also add the message to the message panel with system styling if requested
@@ -319,21 +327,36 @@ export class UIManager {
     messagesToShow.forEach((msg) => {
       const timestamp = msg.timestamp.toLocaleTimeString('en-US', { hour12: false, timeStyle: 'medium' });
       let messageText = msg.content;
-      let displayType = msg.type.toUpperCase();
-      
-      // Handle message type display with shorter labels
-      if (msg.type === "sent_text") {
-        displayType = "SENT";
-      } else if (msg.type === "received") {
-        displayType = "RECV";
-      } else if (msg.type === "system_info") {
-        displayType = "INFO";
-      } else if (msg.type === "system_warn") {
-        displayType = "WARN";
-      } else if (msg.type === "system_error") {
-        displayType = "ERRO";
-      } else if (msg.type === "sent") {
-        displayType = "SENT";
+      let displayType = 'INFO';
+      let cssClassType = 'system_info';
+
+      // Map internal types to display strings and CSS classes
+      switch (msg.type) {
+        case 'sent':
+        case 'sent_text':
+          displayType = 'SENT';
+          cssClassType = 'sent';
+          break;
+        case 'received':
+          displayType = 'RECV';
+          cssClassType = 'received';
+          break;
+        case 'system_info':
+        case 'info':
+        case 'success': // Group success with info
+          displayType = 'INFO';
+          cssClassType = 'system_info';
+          break;
+        case 'system_warn':
+        case 'warn':
+          displayType = 'WARN';
+          cssClassType = 'system_warn';
+          break;
+        case 'system_error':
+        case 'error':
+          displayType = 'ERRO';
+          cssClassType = 'system_error';
+          break;
       }
 
       // Handle JSON formatting for received messages
@@ -348,7 +371,7 @@ export class UIManager {
 
       // Create a div for each message with appropriate styling
       const messageDiv = document.createElement("div");
-      messageDiv.className = `message-line message-${msg.type}`;
+      messageDiv.className = `message-line message-${cssClassType}`;
       messageDiv.textContent = `[${timestamp}] ${displayType}: ${messageText}`;
       messagesElement.appendChild(messageDiv);
     });
@@ -649,7 +672,7 @@ export class UIManager {
       commandsData = typeof paletteData === 'string' ? JSON.parse(paletteData) : paletteData;
     } catch (e) {
       console.error("Invalid palette data:", e);
-      this.showResponse("Error: Invalid palette data format.", true, "system_error");
+      this.showResponse("Error: Invalid palette data format.", true, "error");
       return;
     }
 
@@ -787,7 +810,7 @@ export class UIManager {
     // Recreate the interface
     this.createPaletteEditorTabs(this.editingPaletteData);
 
-    this.showResponse(`Category "${categoryName}" deleted.`, false, "system_info");
+    this.showResponse(`Category "${categoryName}" deleted.`, false, "info");
     this.editPaletteUnsavedChanges = true;
   }
 
@@ -797,7 +820,7 @@ export class UIManager {
 
     const newCategoryName = input.value.trim();
     if (!newCategoryName) {
-      this.showResponse("Category name cannot be empty.", false, "system_warn");
+      this.showResponse("Category name cannot be empty.", false, "warn");
       return;
     }
 
@@ -806,7 +829,7 @@ export class UIManager {
     }
 
     if (this.editingPaletteData && this.editingPaletteData[newCategoryName]) {
-      this.showResponse("A category with this name already exists.", false, "system_warn");
+      this.showResponse("A category with this name already exists.", false, "warn");
       return;
     }
 
@@ -826,7 +849,7 @@ export class UIManager {
     // Activate the renamed tab
     this.activatePaletteEditorTab(newName);
 
-    this.showResponse(`Category renamed from "${oldName}" to "${newName}".`, false, "system_info");
+    this.showResponse(`Category renamed from "${oldName}" to "${newName}".`, false, "info");
     this.editPaletteUnsavedChanges = true;
   }
 
@@ -838,7 +861,7 @@ export class UIManager {
 
     const trimmedName = categoryName.trim();
     if (this.editingPaletteData && this.editingPaletteData[trimmedName]) {
-      this.showResponse("A category with this name already exists.", false, "system_warn");
+      this.showResponse("A category with this name already exists.", false, "warn");
       return;
     }
 
@@ -852,7 +875,7 @@ export class UIManager {
     // Activate the new tab
     this.activatePaletteEditorTab(trimmedName);
 
-    this.showResponse(`Category "${trimmedName}" added.`, false, "system_info");
+    this.showResponse(`Category "${trimmedName}" added.`, false, "info");
     this.editPaletteUnsavedChanges = true;
   }
 
@@ -899,7 +922,7 @@ export class UIManager {
         const categoryData = JSON.parse(textarea.value.trim() || '{}');
         result[categoryName] = categoryData;
       } catch (e) {
-        this.showResponse(`Invalid JSON in category "${categoryName}". Please check the syntax.`, false, "system_error");
+        this.showResponse(`Invalid JSON in category "${categoryName}". Please check the syntax.`, false, "error");
         return null;
       }
     }
