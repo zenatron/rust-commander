@@ -14,7 +14,7 @@ export class ToastManager {
       <div class="toast-content">
         ${icon} <p>${message}</p>
       </div>
-      <small class="toast-dismiss-note">click anywhere to dismiss</small>
+      <small class="toast-dismiss-note">click to dismiss</small>
     `;
 
     this.container.appendChild(toast);

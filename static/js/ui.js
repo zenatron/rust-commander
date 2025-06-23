@@ -386,7 +386,7 @@ export class UIManager {
   toggleMessageSort() {
     this.isSortedNewestFirst = !this.isSortedNewestFirst;
     const button = document.getElementById("sortMessagesButton");
-    button.textContent = this.isSortedNewestFirst ? "Sort Oldest First" : "Sort Newest First";
+    button.innerHTML = this.isSortedNewestFirst ? '<i class="fa-solid fa-sort-up"></i>' : '<i class="fa-solid fa-sort-down"></i>';
     this.updateMessagesDisplay();
   }
 
