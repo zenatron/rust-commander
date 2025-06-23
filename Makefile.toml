@@ -39,7 +39,7 @@ script = [
 description = "Build for Raspberry Pi"
 script = [
     "rustup target add armv7-unknown-linux-gnueabihf",
-    "cargo build --target armv7-unknown-linux-gnueabihf"
+    "cross build --target armv7-unknown-linux-gnueabihf --release"
 ]
 
 [tasks.rename-rpi]
