@@ -1,21 +1,14 @@
 # Linux
 [tasks.build-linux]
-description = "Build for Linux"
-script = [
-    "rustup target add x86_64-unknown-linux-gnu",
-    "cargo build --target x86_64-unknown-linux-gnu"
-]
-
-[tasks.build-release-linux]
 description = "Build for Linux with release profile"
 script = [
     "rustup target add x86_64-unknown-linux-gnu",
     "cargo build --target x86_64-unknown-linux-gnu --release"
 ]
 
-[tasks.rename-release-linux]
+[tasks.rename-linux]
 description = "Rename Linux release binary with version"
-dependencies = ["build-release-linux"]
+dependencies = ["build-linux"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
@@ -23,51 +16,43 @@ script = [
     '''
 ]
 
-# # Windows (MSVC)
-# [tasks.build-windows]
-# description = "Build for Windows"
-# command = "cargo"
-# args = ["build", "--target", "x86_64-pc-windows-msvc"]
-
-# [tasks.build-release-windows]
-# description = "Build for Windows with release profile"
-# command = "cargo"
-# args = ["build", "--target", "x86_64-pc-windows-msvc", "--release"]
-
-# [tasks.rename-release-windows]
-# description = "Rename Windows release binary with version"
-# script = [
-#   "powershell -ExecutionPolicy Bypass -File scripts\\rename-release-windows.ps1"
-# ]
-# dependencies = ["build-release-windows"]
-
 # Windows (GNU)
 [tasks.build-windows]
-description = "Build for Windows"
-script = [
-    "rustup target add x86_64-pc-windows-gnu",
-    "cargo build --target x86_64-pc-windows-gnu"
-]
-
-[tasks.build-release-windows]
 description = "Build for Windows with release profile"
 script = [
     "rustup target add x86_64-pc-windows-gnu",
     "cargo build --target x86_64-pc-windows-gnu --release"
 ]
 
-[tasks.rename-release-windows]
+[tasks.rename-windows]
 description = "Rename Windows release binary with version"
-dependencies = ["build-release-windows"]
+dependencies = ["build-windows"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
     mv target/x86_64-pc-windows-gnu/release/rust-commander.exe target/x86_64-pc-windows-gnu/release/rust-commander-windows-$version.exe || true
     '''
-    # "powershell -ExecutionPolicy Bypass -File scripts\\rename-release-windows.ps1" # not needed for WSL (GNU)
+]
+
+# Raspberry Pi - ARMv7
+[tasks.build-rpi]
+description = "Build for Raspberry Pi"
+script = [
+    "rustup target add armv7-unknown-linux-gnueabihf",
+    "cargo build --target armv7-unknown-linux-gnueabihf"
+]
+
+[tasks.rename-rpi]
+description = "Rename Raspberry Pi release binary with version"
+dependencies = ["build-rpi"]
+script = [
+    '''
+    version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+    mv target/armv7-unknown-linux-gnueabihf/release/rust-commander target/armv7-unknown-linux-gnueabihf/release/rust-commander-rpi-$version || true
+    '''
 ]
 
 # Linux and Windows (release)
-[tasks.rename-release-all]
-description = "Build for Linux and Windows with release profile"
-dependencies = ["rename-release-linux", "rename-release-windows"]
+[tasks.all]
+description = "Build for all platforms with release profile"
+dependencies = ["rename-linux", "rename-windows", "rename-rpi"]

@@ -501,8 +501,6 @@ pre#messagesDisplay {
     border: 1px solid #e0e0e0;
     border-radius: 5px;
     flex-shrink: 0;
-    flex-direction: column;
-    align-items: flex-start;
 }
 
 .palette-controls-container h3 {
@@ -950,19 +948,10 @@ pre#messagesDisplay {
     #jsonDisplayAreasContainer {
         max-width: 95vw;
         padding: 10px;
-        max-height: 50vh;
     }
 
     #variableInputsContainer {
         min-height: 50px;
-    }
-    
-    #messagesContainer {
-        max-width: 95vw;
-    }
-    
-    .selected-command-name {
-        max-width: 40vw;
     }
 
     #palette-controls-container {
@@ -972,5 +961,13 @@ pre#messagesDisplay {
 
     #palette-options-group {
         flex-wrap: wrap;
+    }
+    
+    #messagesContainer {
+        max-width: 95vw;
+    }
+    
+    .selected-command-name {
+        max-width: 40vw;
     }
 }
