@@ -8,15 +8,23 @@ From the UI, the user can connect to target devices [IP:PORT] and send JSON comm
 
 ## Running The Commander
 
-1. Download the latest version under "Releases." There are executable files provided for Linux x86_64 and Windows x86_64. Other versions can be compiled from the source code.
+1. Download the latest version under "Releases." There are executable files provided for Linux x86_64, Windows x86_64, and Raspberry Pi armv7l (32-bit). Other versions can be compiled from the source code.
+
+**NOTE: The browser may have a popup warning about downloading software from the internet. This warning can be safely ignored.**
+
 2. Run the executable. A terminal window will appear with information and show the server startup status.
-3. Go to **http://localhost:8080** in a browser on the machine running the Commander. From there, the web UI is accessed.
+
+**NOTE: On Linux, first make the program executable by running `chmod +x /path/to/program`, replacing the path to program with the actual location of the program file.**
+
+**NOTE: On Windows, Microsoft Defender or other Antivirus apps may prevent the program from running, and may even DELETE the program file. Adjust antivirus settings to allow the program to run.**
+
+3. Go to **http://localhost:8080** in a browser on the machine running the Commander. From there, the web UI is accessed. To access the Commander from another device on the same network, use the IP address of the machine running the Commander. It will be displayed in the terminal window.
 
 ## Usage
 
 ### Connecting to a Device
 
-Connect to a target device. This will be the device that will receive TCP JSON commands. To connect, enter the device's IP address and port, and click "Connect." The convention is [IP:PORT] _e.g. 192.168.1.85:5555_
+This will be the device that will receive TCP JSON commands. To connect, enter the device's IP address and port, and click <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height=16px><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path d="M579.8 267.7c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114L422.3 334.8c-31.5 31.5-82.5 31.5-114 0c-27.9-27.9-31.5-71.8-8.6-103.8l1.1-1.6c10.3-14.4 6.9-34.4-7.4-44.6s-34.4-6.9-44.6 7.4l-1.1 1.6C206.5 251.2 213 330 263 380c56.5 56.5 148 56.5 204.5 0L579.8 267.7zM60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5L217.7 177.2c31.5-31.5 82.5-31.5 114 0c27.9 27.9 31.5 71.8 8.6 103.9l-1.1 1.6c-10.3 14.4-6.9 34.4 7.4 44.6s34.4 6.9 44.6-7.4l1.1-1.6C433.5 260.8 427 182 377 132c-56.5-56.5-148-56.5-204.5 0L60.2 244.3z"/></svg>. The convention is [IP:PORT] _e.g. 192.168.1.85:5555_
 
 **The indicator on the left of the connection input field will show the device connection status (Connected/Disconnected).**
 
