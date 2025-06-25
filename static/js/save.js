@@ -4,8 +4,6 @@ export class SaveManager {
     this.uiManager = uiManager;
   }
 
-
-
   async showSaveModal() {
     const currentCommand = this.commandManager.getCurrentFilledCommand();
     if (!currentCommand) {
@@ -403,6 +401,16 @@ export class SaveManager {
       this.uiManager.showResponse(`New palette '${this.escapeHtml(paletteName)}' created with command '${this.escapeHtml(commandName)}'!`, 'success');
       
       this.closeDynamicModal(modalToClose, null);
+      
+      // Clear existing command selection state before loading new palette
+      if (window.commanderApp) {
+        if (window.commanderApp.commandManager) {
+          window.commanderApp.commandManager.clearAllCommands();
+        }
+        if (window.commanderApp.uiManager) {
+          window.commanderApp.uiManager.clearCommandSelection();
+        }
+      }
       
       // Refresh the palette list and load the new palette
       if (window.commanderApp && typeof window.commanderApp.fetchPalettes === 'function') {

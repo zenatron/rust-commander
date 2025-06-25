@@ -94,37 +94,36 @@ class App {
   }
 
   async saveCurrentPalette() {
-    const currentPaletteName = this.uiManager.getCurrentPaletteName();
-    if (!currentPaletteName) {
-      this.uiManager.showResponse("No palette selected to save or new palette name not provided.", true, "warn");
+    const paletteName = this.uiManager.getCurrentPaletteName();
+    if (!paletteName) {
+      this.uiManager.showResponse("No palette selected to save.", "error");
       return;
     }
 
-    const commandsToSave = this.commandManager.getAllCommands();
-    if (Object.keys(commandsToSave).length === 0) {
-        this.uiManager.showResponse("No commands to save in the current palette.", true, "warn");
-        return;
+    const commands = this.commandManager.getCommandsData();
+    if (!commands) {
+      this.uiManager.showResponse("No command data to save.", "error");
+      return;
     }
 
     try {
-      const response = await fetch('/api/palettes', {
-        method: 'POST',
+      const response = await fetch(`/api/palettes/${paletteName}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: currentPaletteName, commands: commandsToSave }),
+        body: JSON.stringify({ name: paletteName, commands: commands }),
       });
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
+
+      if (response.ok) {
+        this.uiManager.showResponse(`Palette '${paletteName}' saved successfully.`, "success");
+      } else {
+        const errorText = await response.text();
+        this.uiManager.showResponse(`Error saving palette: ${errorText}`, "error");
       }
-      this.uiManager.showResponse(`Palette '${currentPaletteName}' saved successfully.`, true, "success");
-      // After saving, refresh the palette list in case it was a new palette
-      await this.fetchPalettes(); 
-      this.uiManager.setSelectedPalette(currentPaletteName); // Reselect the saved palette
     } catch (error) {
-      console.error(`Error saving palette ${currentPaletteName}:`, error);
-      this.uiManager.showResponse(`Error saving palette '${currentPaletteName}': ${error.message}`, true, "error");
+      console.error('Error saving palette:', error);
+      this.uiManager.showResponse(`Error saving palette: ${error.message}`, "error");
     }
   }
   
@@ -150,6 +149,11 @@ class App {
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
         }
         this.uiManager.showResponse(`Palette '${paletteName}' created successfully.`, true, "success");
+        
+        // Clear existing command selection state before loading new empty palette
+        this.commandManager.clearAllCommands();
+        this.uiManager.clearCommandSelection();
+        
         await this.fetchPalettes();
         this.uiManager.setSelectedPalette(paletteName);
         await this.loadPalette(paletteName);
@@ -160,7 +164,8 @@ class App {
   }
 
 
-  async deletePalette(paletteName) {
+  async deletePalette() {
+    const paletteName = this.uiManager.getCurrentPaletteName();
     if (!paletteName) {
       this.uiManager.showResponse("No palette specified to delete.", true, "warn");
       return;
@@ -176,15 +181,15 @@ class App {
       }
       this.uiManager.showResponse(`Palette '${paletteName}' deleted successfully.`, true, "success");
       await this.fetchPalettes(); // Refresh the list
-      const currentSelectedPalette = this.uiManager.getCurrentPaletteName();
-      if (currentSelectedPalette === paletteName || !currentSelectedPalette) {
-          this.commandManager.clearAllCommands();
-          this.uiManager.clearCommandPalette();
-          this.uiManager.updateLoadedPaletteName(""); 
-          const palettes = this.uiManager.getPaletteList();
-          if (palettes.length > 0) {
-              await this.loadPalette(palettes[0]);
-          }
+
+      // The original logic here was flawed. After deleting the selected palette,
+      // we must always clear the state and load a new palette if one exists.
+      this.commandManager.clearAllCommands();
+      this.uiManager.clearCommandPalette();
+      this.uiManager.updateLoadedPaletteName(""); 
+      const palettes = this.uiManager.getPaletteList();
+      if (palettes.length > 0) {
+          await this.loadPalette(palettes[0]);
       }
     } catch (error) {
       console.error(`Error deleting palette ${paletteName}:`, error);
@@ -212,7 +217,10 @@ class App {
     };
 
     try {
-      const response = await fetch(`/api/palettes/${paletteName}`, {
+      // Before saving, store the current command's info
+      const previousCommandInfo = this.uiManager.getCurrentCommandInfo();
+
+      const response = await fetch(`/api/palettes/${encodeURIComponent(paletteName)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -227,9 +235,24 @@ class App {
       this.uiManager.showResponse(`Palette '${paletteName}' updated successfully.`, true, "success");
       await this.fetchPalettes(); // Refresh palette list
       this.uiManager.setSelectedPalette(paletteName); // Reselect the updated palette
-      await this.loadPalette(paletteName); // Reload the updated palette
+      await this.loadPalette(paletteName, true); // Reload the updated palette
+
+      // After reloading, check if the previously selected command still exists
+      if (previousCommandInfo) {
+        const commandStillExists = this.commandManager.doesCommandExist(
+          previousCommandInfo.categoryName,
+          previousCommandInfo.commandName
+        );
+
+        if (!commandStillExists) {
+          this.uiManager.clearCommandSelection();
+        } else {
+          // If it exists, re-select it (or just the tab)
+          this.uiManager.restoreTabAndCommand(previousCommandInfo.categoryName, previousCommandInfo.commandName);
+        }
+      }
     } catch (error) {
-      console.error(`Error updating palette ${paletteName}:`, error);
+      console.error('Error saving palette changes:', error);
       this.uiManager.showResponse(`Error updating palette '${paletteName}': ${error.message}`, true, "error");
     }
   }
@@ -348,6 +371,11 @@ class App {
                         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
                     }
                     this.uiManager.showResponse(`Palette '${paletteName}' created from file '${file.name}' and loaded.`, true, "success");
+                    
+                    // Clear existing command selection state before loading imported palette
+                    this.commandManager.clearAllCommands();
+                    this.uiManager.clearCommandSelection();
+                    
                     await this.fetchPalettes();
                     this.uiManager.setSelectedPalette(paletteName);
                     await this.loadPalette(paletteName);
@@ -383,16 +411,6 @@ class App {
         console.warn("[main.js] paletteSelector element not found.");
     }
 
-    // Save Palette Button
-    const savePaletteButton = document.getElementById("savePaletteButton");
-    if (savePaletteButton) {
-        savePaletteButton.addEventListener("click", async () => {
-            await this.saveCurrentPalette();
-        });
-    } else {
-        console.warn("[main.js] savePaletteButton element not found.");
-    }
-    
     // Create New Palette Button
     const createPaletteButton = document.getElementById("createPaletteButton");
     if (createPaletteButton) {
@@ -407,12 +425,7 @@ class App {
     const deletePaletteButton = document.getElementById("deletePaletteButton");
     if (deletePaletteButton) {
         deletePaletteButton.addEventListener("click", async () => {
-            const selectedPalette = this.uiManager.getCurrentPaletteName(); // Or get from selector
-            if (selectedPalette) {
-                await this.deletePalette(selectedPalette);
-            } else {
-                this.uiManager.showResponse("No palette selected to delete.", true, "warn");
-            }
+            await this.deletePalette();
         });
     } else {
         console.warn("[main.js] deletePaletteButton element not found.");
@@ -421,31 +434,7 @@ class App {
     // Edit Palette Button
     const editPaletteButton = document.getElementById("editPaletteButton");
     if (editPaletteButton) {
-      editPaletteButton.addEventListener("click", async () => {
-        const currentPaletteName = this.uiManager.getCurrentPaletteName();
-        if (!currentPaletteName) {
-          this.uiManager.showResponse("No palette selected to edit.", true, "warn");
-          return;
-        }
-        try {
-          // Fetch the raw content of the current palette
-          const response = await fetch(`/api/palettes/${currentPaletteName}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const paletteData = await response.json(); // paletteData is { name: "...", commands: { ... } }
-          // The editor should only show the commands part.
-          if (paletteData && paletteData.commands) {
-            this.uiManager.showEditPaletteModal(JSON.stringify(paletteData.commands, null, 2));
-          } else {
-            this.uiManager.showResponse(`Palette data for '${currentPaletteName}' is missing 'commands'. Cannot edit.`, true, "error");
-            console.error("Fetched paletteData is missing a commands field:", paletteData);
-          }
-        } catch (error) {
-          console.error(`Error fetching palette content for editing ${currentPaletteName}:`, error);
-          this.uiManager.showResponse(`Error fetching palette content for \'${currentPaletteName}\': ${error.message}`, true, "error");
-        }
-      });
+      editPaletteButton.addEventListener("click", () => this.uiManager.showEditPaletteModal(this.commandManager.getCommandsData(), this.uiManager.getCurrentPaletteName()));
     } else {
       console.warn("[main.js] editPaletteButton element not found.");
     }
@@ -454,7 +443,7 @@ class App {
     const savePaletteChangesButton = document.getElementById("savePaletteChangesButton");
     if (savePaletteChangesButton) {
       savePaletteChangesButton.addEventListener("click", async () => {
-        const currentPaletteName = this.uiManager.getCurrentPaletteName(); // Ensure this reflects the palette being edited
+        const currentPaletteName = this.uiManager.getCurrentPaletteName();
         const newPaletteContent = this.uiManager.getPaletteEditorContent();
         
         if (newPaletteContent === null) {
@@ -554,7 +543,8 @@ class App {
 
     // Command Options (main button next to Send)
     document.getElementById("commandOptionsButton_main").addEventListener("click", () => {
-      if (!this.validateVariableInputs()) return;
+      // Allow command options regardless of variable input state
+      // Users should be able to save, edit, or delete commands even with incomplete variables
       this.commandOptionsManager.showCommandOptionsModal();
     });
 
@@ -570,6 +560,10 @@ class App {
       });
     } else {
       console.warn('[main.js] sortMessagesButton element not found, skipping listener attachment.');
+    }
+
+    if (this.commandManager) {
+        this.commandManager.clearCurrentCommand();
     }
   }
 

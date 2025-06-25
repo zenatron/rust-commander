@@ -373,15 +373,9 @@ export class CommandOptionsManager {
       
       if (result.success) {
         this.closeDynamicModal(modalElement, escapeListener);
-        // Clear the current command selection since it's been deleted
-        this.commandManager.clearCurrentCommand();
+        // Fully clear the UI selection
         if (this.uiManager) {
-          this.uiManager.updateRawJsonDisplay(null);
-          this.uiManager.updateFilledJsonDisplay(null);
-          const variableContainer = document.getElementById("variableInputsContainer");
-          if (variableContainer) {
-            variableContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
-          }
+          this.uiManager.clearCommandSelection();
         }
       }
     } catch (error) {
@@ -406,15 +400,9 @@ export class CommandOptionsManager {
       const result = await this.deleteCommandFromPalette(commandInfo);
       if (result.success) {
         this.closeDynamicModal(modalElement, escapeListener);
-        // Clear the current command selection since it's been deleted
-        this.commandManager.clearCurrentCommand();
+        // Fully clear the UI selection
         if (this.uiManager) {
-          this.uiManager.updateRawJsonDisplay(null);
-          this.uiManager.updateFilledJsonDisplay(null);
-          const variableContainer = document.getElementById("variableInputsContainer");
-          if (variableContainer) {
-            variableContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
-          }
+          this.uiManager.clearCommandSelection();
         }
       }
       return;
@@ -501,7 +489,7 @@ export class CommandOptionsManager {
           // Restore the tab but don't select any command since it was deleted
           setTimeout(() => {
             this.restoreTabOnly(commandInfo.categoryName);
-            // Clear selection since command was deleted
+            // The command selection is now cleared elsewhere, so just clear highlighting
             this.uiManager.clearActiveCommand();
           }, 100);
         }

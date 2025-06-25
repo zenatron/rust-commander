@@ -64,6 +64,14 @@ export class CommandManager {
     this.activeVariablePaths = [];
   }
 
+  // Check if a specific command exists in the current command data
+  doesCommandExist(categoryName, commandName) {
+    if (!this.commandsData || !this.commandsData[categoryName]) {
+      return false;
+    }
+    return this.commandsData[categoryName].hasOwnProperty(commandName);
+  }
+
   // Set current command
   setCurrentCommand(commandJson) {
     this.currentCommandTemplate = JSON.parse(commandJson);

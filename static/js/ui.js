@@ -48,7 +48,7 @@ export class UIManager {
 
 
     if (Object.keys(commandsData).length === 0) {
-      tabContainer.textContent = "No commands loaded or error in loading.";
+      tabContainer.innerHTML = '<p class="no-palette-message">This palette is empty. Create categories and commands using the Edit Palette option ✏️</p>';
       tabContentContainer.innerHTML = ""; // Also clear content container
       // Clear other related UI elements as before
       const rawJsonDisplayElement = document.getElementById("rawJsonDisplay");
@@ -525,6 +525,25 @@ export class UIManager {
     this.currentCommandInfo = null;
   }
 
+  // Clear the entire command selection view
+  clearCommandSelection() {
+    this.clearActiveCommand();
+    
+    const rawJsonDisplayElement = document.getElementById("rawJsonDisplay");
+    const filledJsonDisplayElement = document.getElementById("filledJsonDisplay");
+    const variableInputsContainer = document.getElementById("variableInputsContainer");
+    const selectedCommandNameElement = document.getElementById("selectedCommandName");
+
+    if (rawJsonDisplayElement) rawJsonDisplayElement.innerHTML = "";
+    if (filledJsonDisplayElement) filledJsonDisplayElement.innerHTML = "";
+    if (variableInputsContainer) variableInputsContainer.innerHTML = '<p class="no-variables-message">Select a command to see details.</p>';
+    if (selectedCommandNameElement) selectedCommandNameElement.textContent = "No command selected";
+
+    if (this.commandManager) {
+        this.commandManager.clearCurrentCommand();
+    }
+  }
+
   // Clear the command palette display (tabs and content)
   clearCommandPalette() {
     const tabContainer = document.getElementById("tabContainer");
@@ -534,7 +553,9 @@ export class UIManager {
     const variableInputsContainer = document.getElementById("variableInputsContainer");
     const selectedCommandNameElement = document.getElementById("selectedCommandName");
 
-    if (tabContainer) tabContainer.innerHTML = "<p>No palette loaded or palette is empty.</p>";
+    if (tabContainer) {
+      tabContainer.innerHTML = '<p class="no-palette-message">No palette loaded or palette is empty 📁</p>';
+    }
     if (tabContentContainer) tabContentContainer.innerHTML = "";
     if (rawJsonDisplayElement) rawJsonDisplayElement.innerHTML = "";
     if (filledJsonDisplayElement) filledJsonDisplayElement.innerHTML = "";
@@ -928,5 +949,18 @@ export class UIManager {
     }
 
     return JSON.stringify(result);
+  }
+
+  restoreTabAndCommand(categoryName, commandName) {
+    this.restoreTabOnly(categoryName);
+    
+    // Find and click the command element
+    const commands = document.querySelectorAll('.command-list-item');
+    for (const command of commands) {
+        if (command.dataset.category === categoryName && command.textContent === commandName) {
+            command.click();
+            break;
+        }
+    }
   }
 }

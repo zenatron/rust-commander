@@ -299,6 +299,20 @@ pre#filledJsonDisplay {
     font-size: 0.9em;
 }
 
+/* No palette/empty palette message styling */
+.no-palette-message {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 12px;
+    margin: 12px;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: default;
+}
+
 #header-controls {
     display: flex;
     align-items: center;
@@ -568,13 +582,23 @@ pre#messagesDisplay {
     max-width: 700px;
     border-radius: 8px;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    position: relative;
 }
 
 .close-button {
     color: #aaa;
-    float: right;
+    position: absolute;
+    top: 15px;
+    right: 20px;
     font-size: 28px;
     font-weight: bold;
+    background: none;
+    border: none;
+    width: auto;
+    height: auto;
+    padding: 0;
+    line-height: 1;
+    cursor: pointer;
 }
 
 .close-button:hover,
@@ -592,6 +616,7 @@ pre#messagesDisplay {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .palette-editor-container {
