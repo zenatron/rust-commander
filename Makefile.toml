@@ -48,11 +48,11 @@ dependencies = ["build-rpi"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-    mv target/armv7-unknown-linux-gnueabihf/release/rust-commander target/armv7-unknown-linux-gnueabihf/release/rust-commander-rpi-$version || true
+    mv target/armv7-unknown-linux-gnueabihf/release/rust-commander target/armv7-unknown-linux-gnueabihf/release/rust-commander-rpi-32bit-armv7-$version || true
     '''
 ]
 
-# Linux and Windows (release)
+# All platforms (release)
 [tasks.all]
 description = "Build for all platforms with release profile"
 dependencies = ["rename-linux", "rename-windows", "rename-rpi"]
