@@ -952,15 +952,44 @@ export class UIManager {
   }
 
   restoreTabAndCommand(categoryName, commandName) {
-    this.restoreTabOnly(categoryName);
+    // Find and activate the tab by category name
+    const allTabs = document.querySelectorAll('.tab');
+    let tabButton = null;
+    for (const tab of allTabs) {
+      if (tab.textContent.trim() === categoryName) {
+        tabButton = tab;
+        break;
+      }
+    }
     
-    // Find and click the command element
-    const commands = document.querySelectorAll('.command-list-item');
-    for (const command of commands) {
-        if (command.dataset.category === categoryName && command.textContent === commandName) {
-            command.click();
-            break;
+    if (tabButton) {
+      this.activateTab(tabButton, categoryName);
+      
+      // Find and click the command element after tab is activated
+      // Use a small delay to ensure tab content is visible
+      setTimeout(() => {
+        const tabContentId = `tab-${categoryName.replace(/\s+/g, "-")}`;
+        const tabContent = document.getElementById(tabContentId);
+        
+        if (tabContent) {
+          const commandList = tabContent.querySelector('.command-list');
+          if (commandList) {
+            const commandItems = commandList.querySelectorAll('li');
+            for (const item of commandItems) {
+              if (item.textContent.trim() === commandName) {
+                item.click();
+                break;
+              }
+            }
+          }
         }
+      }, 50);
+    } else {
+      // If the category doesn't exist anymore (was deleted), activate the first available tab
+      const firstTab = document.querySelector('.tab');
+      if (firstTab) {
+        this.activateTab(firstTab, firstTab.textContent.trim());
+      }
     }
   }
 }
