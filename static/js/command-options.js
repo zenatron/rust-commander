@@ -1,10 +1,14 @@
 // Command Options management module
+import { DOMUtils } from './utils/dom-utils.js';
+import { modalManager } from './utils/modal-manager.js';
+
 export class CommandOptionsManager {
   constructor(commandManager, uiManager, saveManager) {
     this.commandManager = commandManager;
     this.uiManager = uiManager;
     this.saveManager = saveManager;
     this.previousPalette = null; // Track palette before edit/delete operations
+    this.eventCleanupFunctions = [];
   }
 
   async showCommandOptionsModal() {
@@ -26,28 +30,8 @@ export class CommandOptionsManager {
 
     this.uiManager.showResponse("Choose command option...", false, "info");
 
-    const existingModal = document.getElementById('dynamic-command-options-modal');
-    if (existingModal) {
-      existingModal.remove();
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'dynamic-command-options-modal';
-    modal.style.cssText = `
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background: rgba(0,0,0,0.5); z-index: 1000; display: flex; 
-      align-items: center; justify-content: center;
-    `;
-
-    const dialog = document.createElement('div');
-    dialog.classList.add('command-options-modal-dialog');
-    dialog.style.cssText = `
-      background: white; padding: 20px; border-radius: 8px; 
-      max-width: 400px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    `;
-
-    dialog.innerHTML = `
-      <h3 style="margin-top: 0; margin-bottom: 20px; text-align: center;">Command Options</h3>
+    // Use the new modal system instead of manual DOM creation
+    const content = `
       <div style="display: flex; flex-direction: column; gap: 15px;">
         <button id="optionSaveCommand" style="padding: 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 1em;">
           <strong>💾 Save Command</strong><br>
@@ -67,46 +51,68 @@ export class CommandOptionsManager {
       </div>
     `;
 
-    modal.appendChild(dialog);
-    document.body.appendChild(modal);
-
-    const saveCommandBtn = dialog.querySelector('#optionSaveCommand');
-    const editCommandBtn = dialog.querySelector('#optionEditCommand');
-    const deleteCommandBtn = dialog.querySelector('#optionDeleteCommand');
-    const cancelBtn = dialog.querySelector('#optionCancel');
-
-    saveCommandBtn.onclick = async () => {
-      // Transform the current modal to save modal instead of closing/opening
-      this.transformToSaveModal(modal, dialog, escapeKeyListener);
-    };
-
-    editCommandBtn.onclick = () => {
-      // Transform to edit command modal
-      this.transformToEditModal(modal, dialog, escapeKeyListener);
-    };
-
-    deleteCommandBtn.onclick = () => {
-      // Handle delete command with confirmation
-      this.handleDeleteCommand(modal, escapeKeyListener);
-    };
-
-    cancelBtn.onclick = () => this.closeDynamicModal(modal, escapeKeyListener);
-    
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        this.closeDynamicModal(modal, escapeKeyListener);
-      }
+    const { modal, dialog } = modalManager.createModal('command-options-modal', {
+      title: 'Command Options',
+      content: content
     });
-    
-    const escapeKeyListener = (e) => {
-      if (e.key === 'Escape') {
-        this.closeDynamicModal(modal, escapeKeyListener); 
-      }
-    };
-    document.addEventListener('keydown', escapeKeyListener);
+
+    // Set up event listeners with cleanup tracking
+    this.setupModalEventListeners(dialog);
   }
 
-  async transformToSaveModal(modalElement, dialogElement, existingEscapeListener) {
+  setupModalEventListeners(dialog) {
+    // Clean up any existing listeners
+    this.cleanupEventListeners();
+
+    const saveCommandBtn = DOMUtils.querySelector('#optionSaveCommand');
+    const editCommandBtn = DOMUtils.querySelector('#optionEditCommand');
+    const deleteCommandBtn = DOMUtils.querySelector('#optionDeleteCommand');
+    const cancelBtn = DOMUtils.querySelector('#optionCancel');
+
+    if (saveCommandBtn) {
+      const cleanup1 = DOMUtils.addEventListener(saveCommandBtn, 'click', async () => {
+        await this.transformToSaveModal(dialog);
+      });
+      this.eventCleanupFunctions.push(cleanup1);
+    }
+
+    if (editCommandBtn) {
+      const cleanup2 = DOMUtils.addEventListener(editCommandBtn, 'click', () => {
+        this.transformToEditModal(dialog);
+      });
+      this.eventCleanupFunctions.push(cleanup2);
+    }
+
+    if (deleteCommandBtn) {
+      const cleanup3 = DOMUtils.addEventListener(deleteCommandBtn, 'click', () => {
+        this.handleDeleteCommand();
+      });
+      this.eventCleanupFunctions.push(cleanup3);
+    }
+
+    if (cancelBtn) {
+      const cleanup4 = DOMUtils.addEventListener(cancelBtn, 'click', () => {
+        modalManager.destroyModal('command-options-modal');
+        this.cleanupEventListeners();
+      });
+      this.eventCleanupFunctions.push(cleanup4);
+    }
+  }
+
+  cleanupEventListeners() {
+    this.eventCleanupFunctions.forEach(cleanup => cleanup && cleanup());
+    this.eventCleanupFunctions = [];
+  }
+
+  /**
+   * Destroy and cleanup the manager
+   */
+  destroy() {
+    this.cleanupEventListeners();
+    modalManager.destroyModal('command-options-modal');
+  }
+
+  async transformToSaveModal(dialog) {
     // Update response message
     this.uiManager.showResponse("Enter command name and choose save option...", false, "info");
 
@@ -125,7 +131,7 @@ export class CommandOptionsManager {
     }
 
     // Transform the dialog content to save modal
-    dialogElement.innerHTML = `
+    dialog.innerHTML = `
       <h3 style="margin-top: 0; margin-bottom: 20px; text-align: center;">Save Command</h3>
       <div style="display: flex; flex-direction: column; gap: 15px;">
         <div>
@@ -171,13 +177,13 @@ export class CommandOptionsManager {
     `;
 
     // Set up event listeners for the new save modal content
-    const saveToExistingBtn = dialogElement.querySelector('#saveToExistingPalette');
-    const saveToNewBtn = dialogElement.querySelector('#saveToNewPalette');
-    const paletteSelectionArea = dialogElement.querySelector('#paletteSelectionArea');
-    const newPaletteArea = dialogElement.querySelector('#newPaletteArea');
-    const confirmSaveBtn = dialogElement.querySelector('#confirmSaveCommand');
-    const cancelSaveBtn = dialogElement.querySelector('#cancelSaveCommand');
-    const backToOptionsBtn = dialogElement.querySelector('#backToOptions');
+    const saveToExistingBtn = dialog.querySelector('#saveToExistingPalette');
+    const saveToNewBtn = dialog.querySelector('#saveToNewPalette');
+    const paletteSelectionArea = dialog.querySelector('#paletteSelectionArea');
+    const newPaletteArea = dialog.querySelector('#newPaletteArea');
+    const confirmSaveBtn = dialog.querySelector('#confirmSaveCommand');
+    const cancelSaveBtn = dialog.querySelector('#cancelSaveCommand');
+    const backToOptionsBtn = dialog.querySelector('#backToOptions');
 
     saveToExistingBtn.onclick = () => {
       paletteSelectionArea.style.display = 'block';
@@ -190,25 +196,25 @@ export class CommandOptionsManager {
     };
 
     confirmSaveBtn.onclick = async () => {
-      await this.handleSaveCommand(modalElement, existingEscapeListener);
+      await this.handleSaveCommand(dialog);
     };
 
     cancelSaveBtn.onclick = () => {
-      this.closeDynamicModal(modalElement, existingEscapeListener);
+      modalManager.destroyModal('command-options-modal');
     };
 
     backToOptionsBtn.onclick = () => {
       // Transform back to command options modal
-      this.showCommandOptionsModalContent(dialogElement);
+      this.showCommandOptionsModalContent(dialog);
     };
   }
 
-  showCommandOptionsModalContent(dialogElement) {
+  showCommandOptionsModalContent(dialog) {
     // Reset response message
     this.uiManager.showResponse("Choose command option...", false, "info");
 
     // Restore the original command options content
-    dialogElement.innerHTML = `
+    dialog.innerHTML = `
       <h3 style="margin-top: 0; margin-bottom: 20px; text-align: center;">Command Options</h3>
       <div style="display: flex; flex-direction: column; gap: 15px;">
         <button id="optionSaveCommand" style="padding: 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 1em;">
@@ -230,39 +236,41 @@ export class CommandOptionsManager {
     `;
 
     // Re-attach event listeners for the restored content
-    this.attachCommandOptionsListeners(dialogElement);
+    this.attachCommandOptionsListeners(dialog);
   }
 
-  attachCommandOptionsListeners(dialogElement) {
-    const modal = dialogElement.parentElement;
-    const saveCommandBtn = dialogElement.querySelector('#optionSaveCommand');
-    const editCommandBtn = dialogElement.querySelector('#optionEditCommand');
-    const deleteCommandBtn = dialogElement.querySelector('#optionDeleteCommand');
-    const cancelBtn = dialogElement.querySelector('#optionCancel');
+  attachCommandOptionsListeners(dialog) {
+    const modal = dialog.parentElement;
+    const saveCommandBtn = dialog.querySelector('#optionSaveCommand');
+    const editCommandBtn = dialog.querySelector('#optionEditCommand');
+    const deleteCommandBtn = dialog.querySelector('#optionDeleteCommand');
+    const cancelBtn = dialog.querySelector('#optionCancel');
 
     const escapeKeyListener = (e) => {
       if (e.key === 'Escape') {
-        this.closeDynamicModal(modal, escapeKeyListener); 
+        modalManager.destroyModal('command-options-modal');
       }
     };
     document.addEventListener('keydown', escapeKeyListener);
 
     saveCommandBtn.onclick = async () => {
-      this.transformToSaveModal(modal, dialogElement, escapeKeyListener);
+      this.transformToSaveModal(dialog);
     };
 
     editCommandBtn.onclick = () => {
-      this.transformToEditModal(modal, dialogElement, escapeKeyListener);
+      this.transformToEditModal(dialog);
     };
 
     deleteCommandBtn.onclick = () => {
-      this.handleDeleteCommand(modal, escapeKeyListener);
+      this.handleDeleteCommand();
     };
 
-    cancelBtn.onclick = () => this.closeDynamicModal(modal, escapeKeyListener);
+    cancelBtn.onclick = () => {
+      modalManager.destroyModal('command-options-modal');
+    };
   }
 
-  async transformToEditModal(modalElement, dialogElement, existingEscapeListener) {
+  async transformToEditModal(dialog) {
     // Update response message
     this.uiManager.showResponse("Edit command JSON...", false, "info");
 
@@ -289,7 +297,7 @@ export class CommandOptionsManager {
     }
 
     // Transform the dialog content to edit modal
-    dialogElement.innerHTML = `
+    dialog.innerHTML = `
       <h3 style="margin-top: 0; margin-bottom: 20px; text-align: center;">Edit Command</h3>
       <div style="display: flex; flex-direction: column; gap: 15px;">
         <div>
@@ -319,29 +327,29 @@ export class CommandOptionsManager {
     `;
 
     // Set up event listeners for the edit modal content
-    const saveEditedBtn = dialogElement.querySelector('#saveEditedCommand');
-    const cancelEditBtn = dialogElement.querySelector('#cancelEditCommand');
-    const backToOptionsBtn = dialogElement.querySelector('#backToOptionsFromEdit');
-    const commandEditor = dialogElement.querySelector('#commandEditor');
+    const saveEditedBtn = dialog.querySelector('#saveEditedCommand');
+    const cancelEditBtn = dialog.querySelector('#cancelEditCommand');
+    const backToOptionsBtn = dialog.querySelector('#backToOptionsFromEdit');
+    const commandEditor = dialog.querySelector('#commandEditor');
 
     // Focus the textarea
     setTimeout(() => commandEditor.focus(), 100);
 
     saveEditedBtn.onclick = async () => {
-      await this.handleEditCommand(modalElement, existingEscapeListener, currentCommandInfo);
+      await this.handleEditCommand(dialog, currentCommandInfo);
     };
 
     cancelEditBtn.onclick = () => {
-      this.closeDynamicModal(modalElement, existingEscapeListener);
+      modalManager.destroyModal('command-options-modal');
     };
 
     backToOptionsBtn.onclick = () => {
       // Transform back to command options modal
-      this.showCommandOptionsModalContent(dialogElement);
+      this.showCommandOptionsModalContent(dialog);
     };
   }
 
-  async handleDeleteCommand(modalElement, escapeListener) {
+  async handleDeleteCommand() {
     const currentCommandInfo = this.uiManager.getCurrentCommandInfo();
     
     if (!currentCommandInfo) {
@@ -372,7 +380,7 @@ export class CommandOptionsManager {
       const result = await this.deleteCommandFromPalette(currentCommandInfo);
       
       if (result.success) {
-        this.closeDynamicModal(modalElement, escapeListener);
+        modalManager.destroyModal('command-options-modal');
         // Fully clear the UI selection
         if (this.uiManager) {
           this.uiManager.clearCommandSelection();
@@ -384,22 +392,22 @@ export class CommandOptionsManager {
     }
   }
 
-  async handleEditCommand(modalElement, escapeListener, commandInfo) {
-    const commandEditor = modalElement.querySelector('#commandEditor');
+  async handleEditCommand(dialog, currentCommandInfo) {
+    const commandEditor = dialog.querySelector('#commandEditor');
     const editedContent = commandEditor?.value.trim();
 
     // Check if content is empty (deletion case)
     if (!editedContent) {
-      const confirmDelete = confirm(`The command content is empty. This will delete the command "${commandInfo.commandName}".\n\nAre you sure you want to delete this command?`);
+      const confirmDelete = confirm(`The command content is empty. This will delete the command "${currentCommandInfo.commandName}".\n\nAre you sure you want to delete this command?`);
       if (!confirmDelete) {
         this.uiManager.showResponse("Edit cancelled.", false, "info");
         return;
       }
       
       // Handle deletion
-      const result = await this.deleteCommandFromPalette(commandInfo);
+      const result = await this.deleteCommandFromPalette(currentCommandInfo);
       if (result.success) {
-        this.closeDynamicModal(modalElement, escapeListener);
+        modalManager.destroyModal('command-options-modal');
         // Fully clear the UI selection
         if (this.uiManager) {
           this.uiManager.clearCommandSelection();
@@ -419,17 +427,17 @@ export class CommandOptionsManager {
 
     try {
       // Update the command in the palette
-      const result = await this.updateCommandInPalette(commandInfo, parsedCommand);
+      const result = await this.updateCommandInPalette(currentCommandInfo, parsedCommand);
       
       if (result.success) {
-        this.closeDynamicModal(modalElement, escapeListener);
+        modalManager.destroyModal('command-options-modal');
         // Update the current command with the edited version
         this.commandManager.setCurrentCommand(JSON.stringify(parsedCommand));
         if (this.uiManager) {
           this.uiManager.updateRawJsonDisplay(parsedCommand);
           this.uiManager.updateFilledJsonDisplay(parsedCommand);
           // Show success message
-          this.uiManager.showResponse(`Command "${commandInfo.commandName}" updated successfully.`, true, "success");
+          this.uiManager.showResponse(`Command "${currentCommandInfo.commandName}" updated successfully.`, true, "success");
         }
       }
     } catch (error) {
@@ -621,12 +629,12 @@ export class CommandOptionsManager {
     return div.innerHTML;
   }
 
-  async handleSaveCommand(modalElement, escapeListener) {
-    const commandNameInput = modalElement.querySelector('#saveCommandName');
-    const paletteSelect = modalElement.querySelector('#paletteSelect');
-    const newPaletteNameInput = modalElement.querySelector('#newPaletteName');
-    const paletteSelectionArea = modalElement.querySelector('#paletteSelectionArea');
-    const newPaletteArea = modalElement.querySelector('#newPaletteArea');
+  async handleSaveCommand(dialog) {
+    const commandNameInput = dialog.querySelector('#saveCommandName');
+    const paletteSelect = dialog.querySelector('#paletteSelect');
+    const newPaletteNameInput = dialog.querySelector('#newPaletteName');
+    const paletteSelectionArea = dialog.querySelector('#paletteSelectionArea');
+    const newPaletteArea = dialog.querySelector('#newPaletteArea');
 
     const commandName = commandNameInput?.value.trim();
     if (!commandName) {
@@ -657,7 +665,7 @@ export class CommandOptionsManager {
     const result = await this.saveManager.saveCommandToPalette(commandName, targetPalette, currentCommand);
     
     if (result.success) {
-      this.closeDynamicModal(modalElement, escapeListener);
+      modalManager.destroyModal('command-options-modal');
       
       // After successful save, navigate to the "Saved Commands" tab in the target palette
       // Small delay to ensure the palette has been loaded by the SaveManager
@@ -694,14 +702,5 @@ export class CommandOptionsManager {
   // Restore to "Saved Commands" tab specifically, with fallback to first tab
   restoreToSavedCommandsTab() {
     this.restoreTabOnly("Saved Commands");
-  }
-
-  closeDynamicModal(modalElement, escapeListenerToRemove) {
-    if (modalElement && modalElement.parentNode) {
-      modalElement.parentNode.removeChild(modalElement);
-    }
-    if (escapeListenerToRemove) {
-      document.removeEventListener('keydown', escapeListenerToRemove);
-    }
   }
 } 
