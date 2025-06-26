@@ -4,16 +4,16 @@ import { ConnectionManager } from './connection.js';
 import { UIManager } from './ui.js';
 import { SaveManager } from './save.js';
 import { CommandOptionsManager } from './command-options.js';
-import { ToastManager } from './toast.js';
+import { MessagesManager } from './messages.js';
 
 class App {
   constructor() {
-    this.toastManager = new ToastManager();
-    this.uiManager = new UIManager(this.toastManager);
+    this.messagesManager = MessagesManager.getInstance();
+    this.uiManager = new UIManager(this.messagesManager);
     this.commandManager = new CommandManager();
     this.uiManager.setCommandManager(this.commandManager);
     this.connectionManager = new ConnectionManager(
-      (message, type) => this.uiManager.addMessage(message, type),
+      (message, type) => this.messagesManager.addMessage(message, type),
       (isConnected) => this.uiManager.updateConnectionStatus(isConnected)
     );
     this.saveManager = new SaveManager(this.commandManager, this.uiManager);
@@ -548,19 +548,7 @@ class App {
       this.commandOptionsManager.showCommandOptionsModal();
     });
 
-    // Sort Messages (original button)
-    const sortButton = document.getElementById("sortMessagesButton");
-    if (sortButton) {
-      sortButton.addEventListener("click", () => {
-        if (this.uiManager && typeof this.uiManager.toggleMessageSort === 'function') {
-          this.uiManager.toggleMessageSort();
-        } else {
-          console.error('[main.js] this.uiManager or toggleMessageSort is not available.', this.uiManager);
-        }
-      });
-    } else {
-      console.warn('[main.js] sortMessagesButton element not found, skipping listener attachment.');
-    }
+    // Sort Messages button is now handled by MessagesManager during initialization
 
     if (this.commandManager) {
         this.commandManager.clearCurrentCommand();
