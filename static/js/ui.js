@@ -343,7 +343,7 @@ export class UIManager {
           break;
         case 'system_info':
         case 'info':
-        case 'success': // Group success with info
+        case 'success':
           displayType = 'INFO';
           cssClassType = 'system_info';
           break;
@@ -966,7 +966,6 @@ export class UIManager {
       this.activateTab(tabButton, categoryName);
       
       // Find and click the command element after tab is activated
-      // Use a small delay to ensure tab content is visible
       setTimeout(() => {
         const tabContentId = `tab-${categoryName.replace(/\s+/g, "-")}`;
         const tabContent = document.getElementById(tabContentId);
