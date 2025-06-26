@@ -559,27 +559,22 @@ pre#messagesDisplay {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Modal Basic Styling */
+/* Modal Basic Styling - Updated for better backdrop coverage and centering */
 .modal {
+    /* Initial state - will be overridden by JavaScript for proper display */
     display: none;
     position: fixed;
     z-index: 1000;
     left: 0;
     top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgb(0,0,0);
-    background-color: rgba(0,0,0,0.4);
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.5);
 }
 
 .modal-content {
+    /* Base modal content styling - specific sizing handled by JavaScript */
     background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 700px;
     border-radius: 8px;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
     position: relative;
@@ -609,14 +604,15 @@ pre#messagesDisplay {
 }
 
 /* Palette Editor Modal Styles */
-.palette-editor-modal {
-    max-width: 90%;
-    width: 1000px;
-    max-height: 90vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+.palette-editor-modal.modal-content {
+    max-width: 90% !important;
+    width: 1000px !important;
+    max-height: 90vh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    padding: 0 !important;
 }
 
 .palette-editor-container {
@@ -774,33 +770,39 @@ pre#messagesDisplay {
 }
 
 /* Settings Modal Styles - macOS "About this Mac" inspired */
-.settings-modal {
-    max-width: 400px;
-    min-height: 500px;
-    padding: 0;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    background: #ffffff;
-    border: 1px solid #ddd;
-    position: relative;
-    overflow: hidden;
+.settings-modal.modal-content {
+    max-width: 400px !important;
+    min-height: 500px !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    position: relative !important;
+    overflow: hidden !important;
+    width: auto !important;
+    margin: 0 !important;
 }
 
-.settings-modal .close-button {
-    position: absolute;
-    top: 12px;
-    right: 15px;
-    font-size: 20px;
-    color: #666;
-    z-index: 10;
-    background: none;
-    border: none;
-    cursor: pointer;
-    transition: color 0.2s ease;
+.settings-modal.modal-content .close-button {
+    position: absolute !important;
+    top: 12px !important;
+    right: 15px !important;
+    font-size: 20px !important;
+    color: #666 !important;
+    z-index: 10 !important;
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: color 0.2s ease !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    line-height: 1 !important;
 }
 
-.settings-modal .close-button:hover {
-    color: #333;
+.settings-modal.modal-content .close-button:hover {
+    color: #333 !important;
 }
 
 .settings-modal-content {

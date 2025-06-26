@@ -23,35 +23,55 @@ export class ModalManager {
     // Remove existing modal with same ID
     this.destroyModal(id);
 
-    // Create modal structure
+    // Create modal structure with proper full-screen backdrop
     const modal = DOMUtils.createElement('div', {
       id: id,
       class: `modal ${className}`,
       style: `
-        position: fixed; 
-        top: 0; 
-        left: 0; 
-        width: 100%; 
-        height: 100%; 
-        background: rgba(0,0,0,0.5); 
-        z-index: ${zIndex}; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center;
+        position: fixed !important; 
+        top: 0 !important; 
+        left: 0 !important; 
+        width: 100vw !important; 
+        height: 100vh !important; 
+        background: rgba(0,0,0,0.5) !important; 
+        z-index: ${zIndex} !important; 
+        display: flex !important; 
+        align-items: center !important; 
+        justify-content: center !important;
+        overflow: auto !important;
+        padding: 20px !important;
+        box-sizing: border-box !important;
       `
     });
 
+    // For settings modal, use different centering approach
+    const isSettingsModal = className.includes('settings-modal');
+    
     const dialog = DOMUtils.createElement('div', {
-      class: 'modal-content',
-      style: `
-        background: white; 
-        padding: 20px; 
-        border-radius: 8px; 
-        max-width: 90%; 
-        max-height: 90%; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        position: relative;
-        overflow: auto;
+      class: `modal-content ${className}`,
+      style: isSettingsModal ? `
+        background: white !important; 
+        border-radius: 12px !important; 
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+        position: relative !important;
+        overflow: hidden !important;
+        max-width: 400px !important;
+        min-height: 500px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: auto !important;
+        max-height: 90vh !important;
+      ` : `
+        background: white !important; 
+        padding: 20px !important; 
+        border-radius: 8px !important; 
+        max-width: 90% !important; 
+        max-height: 90vh !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        position: relative !important;
+        overflow: auto !important;
+        margin: 0 !important;
+        width: auto !important;
       `
     });
 
@@ -59,20 +79,35 @@ export class ModalManager {
     if (showCloseButton) {
       const closeButton = DOMUtils.createElement('span', {
         class: 'close-button',
-        style: `
-          position: absolute;
-          top: 15px;
-          right: 20px;
-          font-size: 28px;
-          font-weight: bold;
-          cursor: pointer;
-          color: #aaa;
-          background: none;
-          border: none;
-          width: auto;
-          height: auto;
-          padding: 0;
-          line-height: 1;
+        style: isSettingsModal ? `
+          position: absolute !important;
+          top: 12px !important;
+          right: 15px !important;
+          font-size: 20px !important;
+          color: #666 !important;
+          z-index: 10 !important;
+          background: none !important;
+          border: none !important;
+          cursor: pointer !important;
+          transition: color 0.2s ease !important;
+          width: auto !important;
+          height: auto !important;
+          padding: 0 !important;
+          line-height: 1 !important;
+        ` : `
+          position: absolute !important;
+          top: 15px !important;
+          right: 20px !important;
+          font-size: 28px !important;
+          font-weight: bold !important;
+          cursor: pointer !important;
+          color: #aaa !important;
+          background: none !important;
+          border: none !important;
+          width: auto !important;
+          height: auto !important;
+          padding: 0 !important;
+          line-height: 1 !important;
         `
       }, '&times;');
 
@@ -80,8 +115,8 @@ export class ModalManager {
       dialog.appendChild(closeButton);
     }
 
-    // Add title if provided
-    if (title) {
+    // Add title if provided (skip for settings modal as it has custom header)
+    if (title && !isSettingsModal) {
       const titleElement = DOMUtils.createElement('h3', {
         style: 'margin-top: 0; margin-bottom: 20px; text-align: center;'
       }, title);
@@ -90,7 +125,8 @@ export class ModalManager {
 
     // Add content
     const contentElement = DOMUtils.createElement('div', {
-      class: 'modal-body'
+      class: isSettingsModal ? 'settings-modal-content' : 'modal-body',
+      style: isSettingsModal ? '' : 'padding: 0;'
     }, content);
     dialog.appendChild(contentElement);
 

@@ -1,12 +1,12 @@
 // Command Options management module
 import { DOMUtils } from './utils/dom-utils.js';
 import { modalManager } from './utils/modal-manager.js';
+import { apiClient } from './utils/api-client.js';
 
 export class CommandOptionsManager {
-  constructor(commandManager, uiManager, saveManager) {
+  constructor(commandManager, uiManager) {
     this.commandManager = commandManager;
     this.uiManager = uiManager;
-    this.saveManager = saveManager;
     this.previousPalette = null; // Track palette before edit/delete operations
     this.eventCleanupFunctions = [];
   }
@@ -119,13 +119,10 @@ export class CommandOptionsManager {
     // Get the current command to save
     const currentCommand = this.commandManager.getCurrentFilledCommand();
     
-    // Get available palettes
+    // Get available palettes using modern API client
     let palettes = [];
     try {
-      const response = await fetch('/api/palettes');
-      if (response.ok) {
-        palettes = await response.json();
-      }
+      palettes = await apiClient.getPalettes();
     } catch (error) {
       console.error('Error fetching palettes for save modal:', error);
     }
@@ -210,8 +207,8 @@ export class CommandOptionsManager {
   }
 
   showCommandOptionsModalContent(dialog) {
-    // Reset response message
-    this.uiManager.showResponse("Choose command option...", false, "info");
+    // Don't show message again - this is just restoring content during navigation
+    // The original message was already shown when the modal first opened
 
     // Restore the original command options content
     dialog.innerHTML = `
@@ -246,12 +243,15 @@ export class CommandOptionsManager {
     const deleteCommandBtn = dialog.querySelector('#optionDeleteCommand');
     const cancelBtn = dialog.querySelector('#optionCancel');
 
+    // Use managed event listener with cleanup
     const escapeKeyListener = (e) => {
       if (e.key === 'Escape') {
         modalManager.destroyModal('command-options-modal');
+        this.cleanupEventListeners();
       }
     };
-    document.addEventListener('keydown', escapeKeyListener);
+    const escapeCleanup = DOMUtils.addEventListener(document, 'keydown', escapeKeyListener);
+    this.eventCleanupFunctions.push(escapeCleanup);
 
     saveCommandBtn.onclick = async () => {
       this.transformToSaveModal(dialog);
@@ -267,6 +267,7 @@ export class CommandOptionsManager {
 
     cancelBtn.onclick = () => {
       modalManager.destroyModal('command-options-modal');
+      this.cleanupEventListeners();
     };
   }
 
@@ -370,7 +371,13 @@ export class CommandOptionsManager {
 
     const confirmMessage = `Are you sure you want to delete the command "${currentCommandInfo.commandName}" from category "${currentCommandInfo.categoryName}" in palette "${currentCommandInfo.paletteName}"?\n\nThis action cannot be undone.`;
     
-    if (!confirm(confirmMessage)) {
+    const confirmed = await modalManager.showConfirmDialog(confirmMessage, {
+      title: 'Delete Command',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+    
+    if (!confirmed) {
       this.uiManager.showResponse("Delete cancelled.", false, "info");
       return;
     }
@@ -398,7 +405,15 @@ export class CommandOptionsManager {
 
     // Check if content is empty (deletion case)
     if (!editedContent) {
-      const confirmDelete = confirm(`The command content is empty. This will delete the command "${currentCommandInfo.commandName}".\n\nAre you sure you want to delete this command?`);
+      const confirmDelete = await modalManager.showConfirmDialog(
+        `The command content is empty. This will delete the command "${currentCommandInfo.commandName}".\n\nAre you sure you want to delete this command?`,
+        {
+          title: 'Delete Command',
+          confirmText: 'Delete',
+          cancelText: 'Cancel'
+        }
+      );
+      
       if (!confirmDelete) {
         this.uiManager.showResponse("Edit cancelled.", false, "info");
         return;
@@ -452,13 +467,8 @@ export class CommandOptionsManager {
         throw new Error('No palette name provided in command info');
       }
       
-      // Fetch the current palette
-      const response = await fetch(`/api/palettes/${encodeURIComponent(commandInfo.paletteName)}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch palette "${commandInfo.paletteName}": ${response.status}`);
-      }
-      
-      const paletteData = await response.json();
+      // Fetch the current palette using modern API client
+      const paletteData = await apiClient.getPalette(commandInfo.paletteName);
       
       // Remove the command from the palette structure
       if (paletteData.commands[commandInfo.categoryName]) {
@@ -470,20 +480,11 @@ export class CommandOptionsManager {
         }
       }
 
-      // Update the palette
-      const updateResponse = await fetch(`/api/palettes/${encodeURIComponent(commandInfo.paletteName)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: commandInfo.paletteName,
-          commands: paletteData.commands
-        }),
+      // Update the palette using modern API client
+      await apiClient.updatePalette(commandInfo.paletteName, {
+        name: commandInfo.paletteName,
+        commands: paletteData.commands
       });
-
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.text();
-        throw new Error(`Failed to update palette: ${updateResponse.status}, ${errorData}`);
-      }
 
       this.uiManager.showResponse(`Command "${commandInfo.commandName}" deleted successfully from palette "${commandInfo.paletteName}".`, true, "success");
 
@@ -517,13 +518,8 @@ export class CommandOptionsManager {
         throw new Error('No palette name provided in command info');
       }
       
-      // Fetch the current palette
-      const response = await fetch(`/api/palettes/${encodeURIComponent(commandInfo.paletteName)}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch palette "${commandInfo.paletteName}": ${response.status}`);
-      }
-      
-      const paletteData = await response.json();
+      // Fetch the current palette using modern API client
+      const paletteData = await apiClient.getPalette(commandInfo.paletteName);
       
       // Update the command in the palette structure
       if (!paletteData.commands[commandInfo.categoryName]) {
@@ -531,20 +527,11 @@ export class CommandOptionsManager {
       }
       paletteData.commands[commandInfo.categoryName][commandInfo.commandName] = newCommandData;
 
-      // Update the palette
-      const updateResponse = await fetch(`/api/palettes/${encodeURIComponent(commandInfo.paletteName)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: commandInfo.paletteName,
-          commands: paletteData.commands
-        }),
+      // Update the palette using modern API client
+      await apiClient.updatePalette(commandInfo.paletteName, {
+        name: commandInfo.paletteName,
+        commands: paletteData.commands
       });
-
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.text();
-        throw new Error(`Failed to update palette: ${updateResponse.status}, ${errorData}`);
-      }
 
       // Don't show a toast here because handleEditCommand will show one.
       // this.uiManager.showResponse(`Command "${commandInfo.commandName}" updated successfully in palette "${commandInfo.paletteName}".`, true, "success");
@@ -585,12 +572,9 @@ export class CommandOptionsManager {
     // Check if previous palette still exists
     if (this.previousPalette) {
       try {
-        const response = await fetch('/api/palettes');
-        if (response.ok) {
-          const availablePalettes = await response.json();
-          if (availablePalettes.includes(this.previousPalette)) {
-            return this.previousPalette;
-          }
+        const availablePalettes = await apiClient.getPalettes();
+        if (availablePalettes.includes(this.previousPalette)) {
+          return this.previousPalette;
         }
       } catch (error) {
         console.error('Error checking available palettes:', error);
@@ -599,22 +583,17 @@ export class CommandOptionsManager {
     
     // If previous palette doesn't exist, use current palette if it still exists
     try {
-      const response = await fetch(`/api/palettes/${encodeURIComponent(currentPaletteName)}`);
-      if (response.ok) {
-        return currentPaletteName;
-      }
+      await apiClient.getPalette(currentPaletteName);
+      return currentPaletteName;
     } catch (error) {
       console.error('Error checking current palette:', error);
     }
     
     // If neither exists, load the first available palette
     try {
-      const response = await fetch('/api/palettes');
-      if (response.ok) {
-        const availablePalettes = await response.json();
-        if (availablePalettes.length > 0) {
-          return availablePalettes[0];
-        }
+      const availablePalettes = await apiClient.getPalettes();
+      if (availablePalettes.length > 0) {
+        return availablePalettes[0];
       }
     } catch (error) {
       console.error('Error fetching available palettes:', error);
@@ -624,9 +603,7 @@ export class CommandOptionsManager {
   }
 
   escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return DOMUtils.escapeHtml(text);
   }
 
   async handleSaveCommand(dialog) {
@@ -642,44 +619,147 @@ export class CommandOptionsManager {
       return;
     }
 
+    const currentCommand = this.commandManager.getCurrentFilledCommand();
+    if (!currentCommand) {
+      this.uiManager.showResponse("No command to save.", true, "error");
+      return;
+    }
+
     let targetPalette = '';
+    let isNewPalette = false;
+
     if (paletteSelectionArea.style.display === 'block') {
+      // Saving to existing palette
       targetPalette = paletteSelect?.value;
       if (!targetPalette) {
         this.uiManager.showResponse("Please select a palette.", true, "warn");
         return;
       }
     } else if (newPaletteArea.style.display === 'block') {
+      // Creating new palette
       targetPalette = newPaletteNameInput?.value.trim();
       if (!targetPalette) {
         this.uiManager.showResponse("New palette name is required.", true, "warn");
         return;
       }
+      isNewPalette = true;
     } else {
       this.uiManager.showResponse("Please choose a save option.", true, "warn");
       return;
     }
 
-    // Use the SaveManager's existing save functionality
-    const currentCommand = this.commandManager.getCurrentFilledCommand();
-    const result = await this.saveManager.saveCommandToPalette(commandName, targetPalette, currentCommand);
-    
-    if (result.success) {
+    try {
+      if (isNewPalette) {
+        // Create new palette with the command
+        const newPaletteData = {
+          "Saved Commands": {
+            [commandName]: currentCommand
+          }
+        };
+
+        await apiClient.createPalette({
+          name: targetPalette,
+          commands: newPaletteData
+        });
+
+        this.uiManager.showResponse(`New palette '${targetPalette}' created with command '${commandName}'!`, true, "success");
+      } else {
+        // Add to existing palette
+        try {
+          // Try to add the command directly
+          await apiClient.addCommandToPalette(targetPalette, {
+            command_name: commandName,
+            command_data: currentCommand
+          });
+
+          this.uiManager.showResponse(`Command '${commandName}' added to palette '${targetPalette}' successfully!`, true, "success");
+        } catch (error) {
+          if (error.isConflict && error.isConflict()) {
+            // Command already exists - ask for confirmation
+            const overwrite = await modalManager.showConfirmDialog(
+              `Command "${commandName}" already exists in palette "${targetPalette}". Overwrite?`,
+              {
+                title: 'Command Exists',
+                confirmText: 'Overwrite',
+                cancelText: 'Cancel'
+              }
+            );
+
+            if (!overwrite) {
+              this.uiManager.showResponse("Save cancelled. Command name already exists.", false, "info");
+              return;
+            }
+
+            // User confirmed overwrite - update the palette directly
+            await this.overwriteCommandInPalette(targetPalette, commandName, currentCommand);
+            this.uiManager.showResponse(`Command '${commandName}' updated in palette '${targetPalette}' successfully!`, true, "success");
+          } else {
+            throw error; // Re-throw other errors
+          }
+        }
+      }
+
       modalManager.destroyModal('command-options-modal');
+      this.cleanupEventListeners();
+
+      // Refresh the palette list and load the target palette
+      if (window.commanderApp && typeof window.commanderApp.fetchPalettes === 'function') {
+        await window.commanderApp.fetchPalettes();
+        if (typeof window.commanderApp.loadPalette === 'function') {
+          await window.commanderApp.loadPalette(targetPalette, true);
+          
+          // After successful save, navigate to the "Saved Commands" tab
+          setTimeout(() => {
+            this.restoreTabOnly("Saved Commands");
+          }, 100);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error saving command:', error);
+      let errorMessage = 'Unknown error occurred';
       
-      // After successful save, navigate to the "Saved Commands" tab in the target palette
-      // Small delay to ensure the palette has been loaded by the SaveManager
-      setTimeout(() => {
-        this.restoreToSavedCommandsTab();
-      }, 200);
+      if (error.isNetworkError && error.isNetworkError()) {
+        errorMessage = 'Network connection error. Please check your connection and try again.';
+      } else if (error.isServerError && error.isServerError()) {
+        errorMessage = 'Server error. Please try again later.';
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      this.uiManager.showResponse(`Error saving command: ${errorMessage}`, true, "error");
     }
-    // Error handling is done in the saveManager
+  }
+
+  async overwriteCommandInPalette(paletteName, commandName, currentCommand) {
+    try {
+      // Fetch the current palette
+      const paletteData = await apiClient.getPalette(paletteName);
+      
+      // Ensure "Saved Commands" category exists
+      if (!paletteData.commands["Saved Commands"]) {
+        paletteData.commands["Saved Commands"] = {};
+      }
+      
+      // Update the command
+      paletteData.commands["Saved Commands"][commandName] = currentCommand;
+      
+      // Save the updated palette
+      await apiClient.updatePalette(paletteName, {
+        name: paletteName,
+        commands: paletteData.commands
+      });
+
+    } catch (error) {
+      console.error('Error overwriting command in palette:', error);
+      throw error; // Re-throw to be handled by caller
+    }
   }
 
   // Restore just the tab without selecting any specific command
   restoreTabOnly(categoryName) {
-    // Find tab by text content
-    const allTabs = document.querySelectorAll('.tab');
+    // Find tab by text content using DOMUtils
+    const allTabs = DOMUtils.querySelectorAll('.tab');
     let tabButton = null;
     for (const tab of allTabs) {
       if (tab.textContent.trim() === categoryName) {
@@ -692,7 +772,7 @@ export class CommandOptionsManager {
       this.uiManager.activateTab(tabButton, categoryName);
     } else {
       // If the category doesn't exist anymore (was deleted), activate the first available tab
-      const firstTab = document.querySelector('.tab');
+      const firstTab = DOMUtils.querySelector('.tab');
       if (firstTab) {
         this.uiManager.activateTab(firstTab, firstTab.textContent.trim());
       }

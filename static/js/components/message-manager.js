@@ -12,10 +12,6 @@ export class MessageManager {
     this.messagesDisplayElement = null;
     this.sortButton = null;
     
-    // Duplicate message detection
-    this.lastMessageKey = null;
-    this.lastMessageTime = 0;
-    
     this.initialize();
   }
 
@@ -29,9 +25,6 @@ export class MessageManager {
     if (this.sortButton) {
       DOMUtils.addEventListener(this.sortButton, 'click', () => this.toggleMessageSort());
     }
-
-    // Note: Removed self-listening to prevent infinite recursion
-    // MessageManager should be called directly, not listen for its own events
   }
 
   /**
@@ -63,18 +56,6 @@ export class MessageManager {
    * Show response message with toast notification
    */
   showResponse(message, addSystemMessage = true, messageType = "info") {
-    // Check for duplicate calls within a short time window
-    const now = Date.now();
-    const messageKey = `${message}_${messageType}_${addSystemMessage}`;
-    
-    if (this.lastMessageKey === messageKey && (now - this.lastMessageTime) < 100) {
-      console.warn('Duplicate message detected, skipping:', message);
-      return;
-    }
-    
-    this.lastMessageKey = messageKey;
-    this.lastMessageTime = now;
-    
     const toastType = this.getToastType(messageType);
 
     if (this.toastManager) {
