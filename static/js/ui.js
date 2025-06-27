@@ -1,10 +1,7 @@
 // UI management module
 export class UIManager {
-  constructor(toastManager) {
-    this.toastManager = toastManager;
-    this.messageHistory = [];
-    this.messageId = 0;
-    this.isSortedNewestFirst = false;
+  constructor(messagesManager) {
+    this.messagesManager = messagesManager;
     this.isRawJsonExpanded = false;
     this.isFilledJsonExpanded = false;
     this.commandManager = null;
@@ -28,6 +25,9 @@ export class UIManager {
   // Initialize UI
   initialize() {
     this.updateConnectionStatus(false);
+    if (!this.messagesManager) {
+      console.error("Messages manager not found. Please ensure messages.js is properly loaded.");
+    }
   }
 
   // Command palette functionality - create tabs and command lists
@@ -193,35 +193,11 @@ export class UIManager {
 
   // Show response in the response div and add to message panel
   showResponse(message, addSystemMessage = true, messageType = "info") {
-    let toastType = 'info';
-    switch (messageType) {
-      case 'system_info':
-      case 'info':
-        toastType = 'info';
-        break;
-      case 'system_warn':
-      case 'warn':
-        toastType = 'warn';
-        break;
-      case 'system_error':
-      case 'error':
-        toastType = 'error';
-        break;
-      case 'success':
-        toastType = 'success';
-        break;
-    }
-
-    if (this.toastManager) {
-      this.toastManager.show(message, toastType);
+    if (this.messagesManager) {
+      this.messagesManager.showMessage(message, addSystemMessage, messageType);
     } else {
-      // Fallback to old console log if toast manager isn't there for some reason
-      console.log(`[Toast Fallback] ${messageType}: ${message}`);
-    }
-    
-    // Also add the message to the message panel with system styling if requested
-    if (addSystemMessage) {
-      this.addMessage(message, messageType);
+      // Fallback to console log if messages manager isn't available
+      console.log(`[Messages Fallback] ${messageType}: ${message}`);
     }
   }
 
@@ -299,95 +275,11 @@ export class UIManager {
     return processedLine;
   }
 
-  // Message display functionality
+  // Message display functionality - delegate to MessagesManager
   addMessage(messageContent, messageType = "received") {
-    // Handle backward compatibility for old message types
-    if (messageType === "system") {
-      messageType = "system_info";
+    if (this.messagesManager) {
+      this.messagesManager.addMessage(messageContent, messageType);
     }
-    
-    this.messageHistory.push({ 
-      id: this.messageId++, 
-      content: messageContent, 
-      type: messageType,
-      timestamp: new Date()
-    });
-    this.updateMessagesDisplay();
-  }
-
-  updateMessagesDisplay() {
-    const messagesElement = document.getElementById("messagesDisplay");
-    let messagesToShow = [...this.messageHistory];
-    
-    if (this.isSortedNewestFirst) {
-      messagesToShow.reverse();
-    }
-
-    messagesElement.innerHTML = "";
-    messagesToShow.forEach((msg) => {
-      const timestamp = msg.timestamp.toLocaleTimeString('en-US', { hour12: false, timeStyle: 'medium' });
-      let messageText = msg.content;
-      let displayType = 'INFO';
-      let cssClassType = 'system_info';
-
-      // Map internal types to display strings and CSS classes
-      switch (msg.type) {
-        case 'sent':
-        case 'sent_text':
-          displayType = 'SENT';
-          cssClassType = 'sent';
-          break;
-        case 'received':
-          displayType = 'RECV';
-          cssClassType = 'received';
-          break;
-        case 'system_info':
-        case 'info':
-        case 'success': // Group success with info
-          displayType = 'INFO';
-          cssClassType = 'system_info';
-          break;
-        case 'system_warn':
-        case 'warn':
-          displayType = 'WARN';
-          cssClassType = 'system_warn';
-          break;
-        case 'system_error':
-        case 'error':
-          displayType = 'ERRO';
-          cssClassType = 'system_error';
-          break;
-      }
-
-      // Handle JSON formatting for received messages
-      if (msg.type === "received") {
-        try {
-          const parsed = JSON.parse(msg.content);
-          messageText = JSON.stringify(parsed);
-        } catch (e) {
-          // Keep as is if not valid JSON
-        }
-      }
-
-      // Create a div for each message with appropriate styling
-      const messageDiv = document.createElement("div");
-      messageDiv.className = `message-line message-${cssClassType}`;
-      messageDiv.textContent = `[${timestamp}] ${displayType}: ${messageText}`;
-      messagesElement.appendChild(messageDiv);
-    });
-    
-    // Auto-scroll to bottom (unless sorted newest first)
-    if (!this.isSortedNewestFirst) {
-      messagesElement.scrollTop = messagesElement.scrollHeight;
-    }
-  }
-
-  // Toggle message sort
-  toggleMessageSort() {
-    this.isSortedNewestFirst = !this.isSortedNewestFirst;
-    const button = document.getElementById("sortMessagesButton");
-    button.innerHTML = this.isSortedNewestFirst ? '<i class="fa-solid fa-sort-up"></i>' : '<i class="fa-solid fa-sort-down"></i>';
-    this.updateMessagesDisplay();
   }
 
   // Utility function to escape HTML
@@ -397,10 +289,11 @@ export class UIManager {
     return div.innerHTML;
   }
 
-  // Clear messages
+  // Clear messages - delegate to MessagesManager
   clearMessages() {
-    this.messageHistory = [];
-    this.updateMessagesDisplay();
+    if (this.messagesManager) {
+      this.messagesManager.clearMessages();
+    }
   }
 
   initializeResizeHandle() {
@@ -966,7 +859,6 @@ export class UIManager {
       this.activateTab(tabButton, categoryName);
       
       // Find and click the command element after tab is activated
-      // Use a small delay to ensure tab content is visible
       setTimeout(() => {
         const tabContentId = `tab-${categoryName.replace(/\s+/g, "-")}`;
         const tabContent = document.getElementById(tabContentId);

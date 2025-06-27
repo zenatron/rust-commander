@@ -177,38 +177,6 @@ export class ConnectionManager {
     }
   }
 
-  // Send raw text command
-  async sendTextCommand(textCommand, delimiter) {
-    try {
-      const response = await fetch("/send-text-command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          text_command: textCommand,
-          delimiter: delimiter
-        }),
-      });
-      
-      const text = await response.text();
-      if (!response.ok) {
-        // Send system message about text command sending error
-        this.onMessage(`Text command send error: ${text}`, "system_error");
-      }
-      return {
-        success: response.ok,
-        message: text
-      };
-    } catch (error) {
-      console.error("Error sending text command:", error);
-      // Send system message about text command sending error
-      this.onMessage(`Text command send error: ${error.message}`, "system_error");
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-  }
-
   // Check if WebSocket is connected
   isWebSocketConnected() {
     return this.persistentSocket && this.persistentSocket.readyState === WebSocket.OPEN;

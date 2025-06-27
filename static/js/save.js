@@ -444,11 +444,4 @@ export class SaveManager {
       }
     }
   }
-
-  canSave() {
-    const currentCommand = this.commandManager.getCurrentFilledCommand();
-    const templateCommand = this.commandManager.getCurrentTemplateCommand();
-    return currentCommand && templateCommand && 
-           JSON.stringify(currentCommand) !== JSON.stringify(templateCommand);
-  }
 } 
