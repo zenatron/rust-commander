@@ -11,7 +11,6 @@
     max-height: 400px;
     flex-shrink: 0;
     max-width: 65vw;
-    max-width: 95vw;
 }
 
 pre#messagesDisplay {
