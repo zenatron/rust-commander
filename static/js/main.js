@@ -525,20 +525,7 @@ class App {
 
     // Send Command (original send button)
     document.getElementById("sendButton").addEventListener("click", async () => {
-      if (!this.validateAndSendCommand()) return;
-
-      const command = this.commandManager.getCurrentFilledCommand();
-      const delimiterInput = document.getElementById("commandDelimiterInput");
-      const delimiter = delimiterInput ? delimiterInput.value : null; // Get delimiter, or null if input not found
-
-      const result = await this.connectionManager.sendCommand(command, delimiter);
-      
-      if (result.success) {
-        this.uiManager.addMessage(JSON.stringify(command) + (delimiter ? ` (delim: '${delimiter}')` : ''), "sent");
-      } else {
-        // Apply error styling to the response div
-        this.uiManager.showResponse(`Send error: ${result.message}`, false, "error");
-      }
+      await this.handleSendCommand();
     });
 
     // Command Options (main button next to Send)
@@ -549,6 +536,14 @@ class App {
     });
 
     // Sort Messages button is now handled by MessagesManager during initialization
+
+    // Global keyboard shortcut: Shift+Enter to send command
+    document.addEventListener('keydown', async (e) => {
+      if (e.shiftKey && e.key === 'Enter') {
+        e.preventDefault(); // Prevent default behavior (like adding new line in textareas)
+        await this.handleSendCommand();
+      }
+    });
 
     if (this.commandManager) {
         this.commandManager.clearCurrentCommand();
@@ -580,6 +575,24 @@ class App {
     }
 
     return this.validateVariableInputs();
+  }
+
+  // Handle sending command (used by both send button and keyboard shortcut)
+  async handleSendCommand() {
+    if (!this.validateAndSendCommand()) return;
+
+    const command = this.commandManager.getCurrentFilledCommand();
+    const delimiterInput = document.getElementById("commandDelimiterInput");
+    const delimiter = delimiterInput ? delimiterInput.value : null; // Get delimiter, or null if input not found
+
+    const result = await this.connectionManager.sendCommand(command, delimiter);
+
+    if (result.success) {
+      this.uiManager.addMessage(JSON.stringify(command) + (delimiter ? ` (delim: '${delimiter}')` : ''), "sent");
+    } else {
+      // Apply error styling to the response div
+      this.uiManager.showResponse(`Send error: ${result.message}`, false, "error");
+    }
   }
 
   // Handle command selection from tabs

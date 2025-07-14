@@ -190,10 +190,16 @@ pre#messagesDisplay {
     }
     
     #toast-container {
-        right: 10px;
-        left: 10px;
         top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
         width: auto;
+        max-width: calc(100vw - 20px);
         align-items: center;
+    }
+
+    .toast {
+        max-width: calc(100vw - 40px);
+        min-width: 280px;
     }
 } 
