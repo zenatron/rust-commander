@@ -12,7 +12,7 @@ dependencies = ["build-linux"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-    mv target/x86_64-unknown-linux-gnu/release/rust-commander target/x86_64-unknown-linux-gnu/release/rust-commander-linux-$version || true
+    mv target/x86_64-unknown-linux-gnu/release/rust-commander target/x86_64-unknown-linux-gnu/release/rust-commander-$version-linux || true
     '''
 ]
 
@@ -30,7 +30,7 @@ dependencies = ["build-windows"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-    mv target/x86_64-pc-windows-gnu/release/rust-commander.exe target/x86_64-pc-windows-gnu/release/rust-commander-windows-$version.exe || true
+    mv target/x86_64-pc-windows-gnu/release/rust-commander.exe target/x86_64-pc-windows-gnu/release/rust-commander-$version-windows.exe || true
     '''
 ]
 
@@ -48,7 +48,7 @@ dependencies = ["build-rpi"]
 script = [
     '''
     version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-    mv target/armv7-unknown-linux-gnueabihf/release/rust-commander target/armv7-unknown-linux-gnueabihf/release/rust-commander-rpi-32bit-armv7-$version || true
+    mv target/armv7-unknown-linux-gnueabihf/release/rust-commander target/armv7-unknown-linux-gnueabihf/release/rust-commander-$version-rpi-32bit-armv7 || true
     '''
 ]
 
