@@ -1,26 +1,28 @@
 # Rust Commander
-Documentation updated for v0.12.1.
+
+Documentation updated for v0.12.4 (latest version).
+
+- **[Jump to Usage](#usage---overview)**
+- **[Jump to Writing Commands](#writing-commands)**
+- **[Jump to Troubleshooting](#troubleshooting)**
 
 ## About
 
-Rust Commander is a program that allows sending JSON commands to connected devices through TCP using websockets.
-The program creates a web server on the computer running it, allowing access to the web UI on port 8080.
-From the UI, the user can connect to target devices [IP:PORT] and send JSON commands from a predefined JSON file.
+Rust Commander is a program that allows sending JSON commands to connected devices through TCP using websockets. The program creates a web server on the computer running it, allowing access to the web UI on port 8080. From the UI, the user can connect to target devices' [IP:PORT] from across the network, or locally through `localhost` and send JSON commands from a predefined JSON file.
 
+## Installation
 
-## Running The Commander
-
-### System Requirements
+### Requirements
 
 - **Operating System:** Windows (x86_64), Linux (x86_64), or Raspberry Pi (armv7l 32-bit)
 - **Available Port:** Port 8080 must be available on your system
-- **Network:** TCP/IP network connectivity to target devices
+- **Network:** TCP/IP network connectivity for target devices, or connect to devices locally using `localhost`.
 - **Browser:** Modern web browser with JavaScript enabled
 - **Firewall:** Allow inbound connections on port 8080 for network access
 
-### Installation
+### Download & Run
 
-1. Download the latest version under "Releases." There are executable files provided for Linux x86_64, Windows x86_64, and Raspberry Pi armv7l (32-bit). Other versions can be compiled from the source code.
+1. Download the latest version under "[Releases](https://github.com/zenatron/rust-commander/releases)." There are executable files provided for Linux x86_64, Windows x86_64, and Raspberry Pi armv7l (32-bit). Other versions can be compiled from the source code.
 
 **NOTE: The browser may have a popup warning about downloading software from the internet. This warning can be safely ignored.**
 
@@ -51,6 +53,8 @@ All program and device status messages are also logged in the [Messages Pane](#m
 ### App Information & Settings
 
 To see more information about the Commander, click the ℹ️ button in the top left corner. This will open a modal with information about the Commander, including the version number, build info, and links to **getting help and reporting issues**.
+
+#### If you are facing issues, please first check the [Troubleshooting](#troubleshooting) section.
 
 ## Usage - Commands & Palettes
 
@@ -106,7 +110,7 @@ Some commands will have variable fields that will need to be filled in before th
 
 Before sending, ensure any variables are filled in, if applicable. Additionally, a command delimiter may be specified, with an input field to the left of the send button. By default, the Commander sends NO delimiter. Certain applications may require delimiters such as (`\0, \r, \n, or |*|`). Technically, anything can be written in the delimiter input field; it is up to the receiving device to correctly parse it. Enter common delimiters without any quotes, parentheses, braces, etc. e.g. `\r` NOT `"\r"`.
 
-Press Send. This will send the filled in JSON command and the appended delimiter to the target device.
+Press Send (or press SHIFT+ENTER). This will send the filled in JSON command and the appended delimiter to the target device.
 
 ### Command Options
 
@@ -151,21 +155,21 @@ Variable values should include a `%` symbol to be picked up by the Commander. Se
 
 ```json
 {
-	"Category 1 Title": {
-		"Get Version": {"cmd": "ver"},
-		"Command 2 Title": {"foo": "bar"}
+  "Category 1 Title": {
+    "Command 1 Title": {"cmd": "ver"},
+    "Command 2 Title": {"foo": "bar"}
 	},
-	"Category 2 Title": {
-		"Command 3 Title": {"foo": "bar", "vars": {"foo": "bar"}}
+  "Category 2 Title": {
+    "Command 3 Title": {"foo": "bar", "vars": {"foo": "bar"}}
 	}
 }
 ```
 
-`// INCORRECT - COMMANDS WILL NOT DISPLAY PROPERLY`
+`// INCORRECT - COMMANDS WILL NOT DISPLAY PROPERLY (MISSING CATEGORY KEY)`
 
 ```json
 {
-	"Get Version": {"cmd": "ver"}
+  "Get Version": {"cmd": "ver"}
 }
 ```
 
@@ -173,8 +177,8 @@ Variable values should include a `%` symbol to be picked up by the Commander. Se
 
 ```json
 {
-	"Category": {
-		"Command": {"ch":0,"cmd":"cc","line":"%01"}
+  "Category": {
+    "Command": {"ch":0,"cmd":"cc","line":"%01"}
 	}
 }
 ```
@@ -200,16 +204,15 @@ Variable values should include a `%` symbol to be picked up by the Commander. Se
 - Ensure no proxy or firewall is blocking WebSocket connections
 - Try accessing via `http://localhost:8080` instead of the network IP
 
-**Palette import/export issues:**
+**Palette import/export/saving issues:**
 - Ensure JSON files are valid using a JSON validator
+- **Important:** ALL JSON keys must be unique. I.e. Categories and commands **must not have the same names** in a given palette.
 - Check file permissions in the palette directories
 - Verify the JSON structure follows the [Writing Commands](#writing-commands) format
 
 **Performance issues:**
-- Large palettes (>100 commands) may load slower
-- Close unused browser tabs to free memory
-- Consider splitting large palettes into smaller, focused ones
+
+The Commander should not face any performance issues on modern hardware. If any problems are encountered, please report them.
 
 ### Reporting Issues
-
 If you encounter any issues, please report them on the [GitHub Issues](https://github.com/zenatron/rust-commander/issues) page.
